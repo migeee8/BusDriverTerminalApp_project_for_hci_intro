@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Clock, MapPin, Navigation, Users, Coffee, MessageSquare, AlertTriangle, ChevronRight, ChevronLeft, Calendar, X, Utensils, Car, Phone, Share2, Star, Info, Map as MapIcon, Leaf, AlertCircle, Timer, Eye, EyeOff, PhoneCall, ShieldAlert, Accessibility, Mail, Bell, CheckCircle, Smile, Meh, Frown, Music, Volume2, Activity, History as HistoryIcon, Bus, Warehouse, Flag, ArrowRight, BellRing, Play, Sun, Moon, Pause, Mic, Wind, Thermometer, Fan, Lock, Unlock, Zap, LayoutGrid, Home, Radio } from 'lucide-react';
+import { CloudSun, Droplets, Cloud, CloudRain  } from 'lucide-react';
+import { Clock, MapPin, Navigation, Users, Coffee, MessageSquare, AlertTriangle, LogOut, ChevronRight, ChevronLeft, Calendar, X, Utensils, Car, Phone, Share2, Star, Info, Map as MapIcon, Leaf, AlertCircle, Timer, Eye, EyeOff, PhoneCall, ShieldAlert, Accessibility, Mail, Bell, CheckCircle, Smile, Meh, Frown, Music, Volume2, Activity, History as HistoryIcon, Bus, Warehouse, Flag, ArrowRight, BellRing, Play, Sun, Moon, Pause, Mic, Wind, Thermometer, Fan, Lock, Unlock, Zap, LayoutGrid, Home, Radio } from 'lucide-react';
 
 // --- 1. 真实线路数据 ---
 const route4Stops = [
@@ -9,7 +10,8 @@ const route4Stops = [
     { name: "Rosenlund", time: "00:12" },
     { name: "Södra station", time: "00:15" },
     { name: "Zinkensdamm", time: "00:20" },
-    { name: "Hornstull", time: "00:25", type: 'rest_stop', features: ['wc', 'food'], menu: [{ id: 1, name: "Coffee & Bun", price: "45kr", isVegan: true, image: "☕️" }] },
+    { name: "Hornstull", time: "00:25", type: 'rest_stop', features: ['wc', 'food'], menu: [{ id: 1, name: "Coffee & Bun", price: "45kr", isVegan: true, image: "☕️" }, { id: 102, name: "Falafel Wrap", price: "65kr", isVegan: true, waitTime: 5, image: "🌯" },
+        { id: 103, name: "Meatballs & Mash", price: "95kr", isVegan: false, waitTime: 12, image: "🍲" },] },
     { name: "Västerbroplan", time: "00:32" },
     { name: "Fridhemsplan", time: "00:38" },
     { name: "Fleminggatan", time: "00:42" },
@@ -35,7 +37,9 @@ const route6Stops = [
     { name: "Odengatan", time: "00:26" },
     { name: "Roslagsgatan", time: "00:29" },
     { name: "Stadsbiblioteket", time: "00:33" },
-    { name: "Odenplan", time: "00:36", type: 'rest_stop', features: ['wc', 'food'], menu: [{ id: 2, name: "Salad Bowl", price: "85kr", isVegan: true, image: "🥗" }] },
+    { name: "Odenplan", time: "00:36", type: 'rest_stop', features: ['wc', 'food'], menu: [{ id: 2, name: "Salad Bowl", price: "85kr", isVegan: true, image: "🥗" },{ id: 104, name: "Caesar Salad", price: "75kr", isVegan: false, waitTime: 6, image: "🥗" },
+        { id: 105, name: "Vegan Poke Bowl", price: "105kr", isVegan: true, waitTime: 8, image: "🍱" },
+        { id: 106, name: "Hot Dog Special", price: "45kr", isVegan: false, waitTime: 3, image: "🌭" },] },
     { name: "Dalagatan", time: "00:40" },
     { name: "Karlbergsvägen", time: "00:44" },
     { name: "Torsplan", time: "00:48" },
@@ -63,132 +67,448 @@ const generateTimeline = (stops, startHour, startMinute) => {
     });
 };
 
-// --- 2. 车辆状态页面 ---
+const LoginPage = ({ onLoginSuccess }) => {
+    const [loginStep, setLoginStep] = useState('idle'); // idle, processing, welcome
+
+    const handleSwipe = () => {
+        setLoginStep('processing');
+        // 模拟读取卡片数据
+        setTimeout(() => {
+            setLoginStep('welcome');
+            // 显示欢迎动画后进入主页
+            setTimeout(() => {
+                onLoginSuccess();
+            }, 2500);
+        }, 1000);
+    };
+
+    return (
+        <div className="absolute inset-0 z-[100] bg-slate-900 text-white flex flex-col items-center justify-center p-8 overflow-hidden">
+            {/* 背景装饰 */}
+            <div className="absolute inset-0 opacity-20 pointer-events-none">
+                <div className="absolute top-0 left-0 w-96 h-96 bg-blue-500 rounded-full blur-[100px] -translate-x-1/2 -translate-y-1/2"></div>
+                <div className="absolute bottom-0 right-0 w-96 h-96 bg-purple-500 rounded-full blur-[100px] translate-x-1/2 translate-y-1/2"></div>
+            </div>
+
+            {loginStep === 'idle' && (
+                <div className="z-10 flex flex-col items-center animate-in fade-in zoom-in duration-500">
+                    <div className="mb-8 p-6 bg-slate-800 rounded-2xl border border-slate-700 shadow-2xl flex flex-col items-center">
+                        <div className="w-64 h-40 bg-gradient-to-br from-slate-600 to-slate-800 rounded-xl mb-6 relative border-t border-white/10 flex items-center justify-center overflow-hidden">
+                            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-30"></div>
+                            <div className="w-full h-8 bg-black/50 absolute top-4"></div>
+                            <div className="text-xs text-slate-400 absolute bottom-4 left-4">ID CARD</div>
+                        </div>
+                        <h2 className="text-2xl font-bold mb-2">Driver Login</h2>
+                        <p className="text-slate-400 text-sm mb-6 text-center max-w-xs">
+                            Please swipe your Employee ID card on the reader to start your shift.
+                        </p>
+                        
+                        {/* 模拟刷卡动作的按钮 */}
+                        <button 
+                            onClick={handleSwipe}
+                            className="group relative flex items-center gap-3 px-8 py-4 bg-blue-600 hover:bg-blue-500 rounded-full font-bold transition-all active:scale-95 shadow-[0_0_20px_rgba(37,99,235,0.5)]"
+                        >
+                            <div className="w-2 h-8 bg-white/20 rounded-full absolute left-4 group-hover:h-full transition-all duration-300"></div>
+                            <span>Tap here to Swipe Card</span>
+                            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                        </button>
+                    </div>
+                    <div className="text-slate-500 text-xs mt-8">System v2.4.0 | BusOS</div>
+                </div>
+            )}
+
+            {loginStep === 'processing' && (
+                <div className="z-10 flex flex-col items-center">
+                    <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                    <p className="text-blue-400 font-mono animate-pulse">Authenticating...</p>
+                </div>
+            )}
+
+            {loginStep === 'welcome' && (
+                <div className="z-10 text-center animate-in slide-in-from-bottom-10 fade-in duration-700">
+                    <div className="w-24 h-24 bg-slate-200 rounded-full mx-auto mb-6 flex items-center justify-center border-4 border-white shadow-xl overflow-hidden">
+                        <Users className="w-12 h-12 text-slate-400" /> {/* 这里可以用头像图片 */}
+                    </div>
+                    <h1 className="text-5xl font-bold mb-2">Welcome, Jack</h1>
+                    <p className="text-xl text-slate-400">ID: 9527 • Senior Driver</p>
+                    <div className="mt-8 flex gap-2 justify-center">
+                        <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce" style={{animationDelay: '0s'}}></div>
+                        <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                        <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce" style={{animationDelay: '0.4s'}}></div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+
+// --- 2. 车辆状态页面 (Updated: Independent Zone Climate Control) ---
 const VehicleStatusPage = ({ darkMode }) => {
-    const [temp, setTemp] = useState(22);
+    // --- 1. Climate Controls (独立温区逻辑) ---
+    // 分别定义全车和驾驶员的温度
+    const [tempAll, setTempAll] = useState(22);
+    const [tempDriver, setTempDriver] = useState(20);
+    
     const [fanSpeed, setFanSpeed] = useState(2);
-    const [climateZone, setClimateZone] = useState('all');
+    const [climateZone, setClimateZone] = useState('all'); // 'all' or 'driver'
     const [acActive, setAcActive] = useState(true);
     const [heatActive, setHeatActive] = useState(false);
     const [autoMode, setAutoMode] = useState(false);
+
+    // 计算当前应该显示的温度
+    const currentTemp = climateZone === 'all' ? tempAll : tempDriver;
+
+    // 处理温度调节
+    const handleTempChange = (e) => {
+        const newVal = e.target.value;
+        if (climateZone === 'all') {
+            setTempAll(newVal);
+        } else {
+            setTempDriver(newVal);
+        }
+    };
+
+    // Read-only Status
     const [doorsLocked, setDoorsLocked] = useState(true);
     const [interiorLights, setInteriorLights] = useState(false);
+    const [ecoScore, setEcoScore] = useState(92);
 
+    // Weather Data
+    const hourlyForecast = [
+        { time: "Now", temp: 18, icon: <Sun className="w-5 h-5 text-orange-500"/> },
+        { time: "14:00", temp: 19, icon: <Sun className="w-5 h-5 text-orange-500"/> },
+        { time: "15:00", temp: 19, icon: <CloudSun className="w-5 h-5 text-orange-400"/> },
+        { time: "16:00", temp: 18, icon: <Cloud className="w-5 h-5 text-slate-400"/> },
+        { time: "17:00", temp: 17, icon: <CloudRain className="w-5 h-5 text-blue-400"/>, isRain: true },
+        { time: "18:00", temp: 16, icon: <CloudRain className="w-5 h-5 text-blue-500"/>, isRain: true },
+        { time: "19:00", temp: 15, icon: <Cloud className="w-5 h-5 text-slate-500"/> },
+        { time: "20:00", temp: 14, icon: <Moon className="w-5 h-5 text-indigo-400"/> },
+    ];
+
+    // Climate Handlers
     const toggleAc = () => { if (!acActive) { setHeatActive(false); setAutoMode(false); } setAcActive(!acActive); };
     const toggleHeat = () => { if (!heatActive) { setAcActive(false); setAutoMode(false); } setHeatActive(!heatActive); };
     const toggleAuto = () => { if (!autoMode) { setAcActive(true); setHeatActive(false); setFanSpeed(2); } setAutoMode(!autoMode); };
     
+    // System Monitor Simulation
+    useEffect(() => {
+        const interval = setInterval(() => {
+            if (Math.random() > 0.6) setDoorsLocked(prev => !prev);
+            if (Math.random() > 0.7) setInteriorLights(prev => !prev);
+            setEcoScore(prev => Math.min(100, Math.max(85, prev + (Math.random() > 0.5 ? 1 : -1))));
+        }, 5000); 
+        return () => clearInterval(interval);
+    }, []);
+
     return (
         <div className={`w-full h-full p-8 overflow-y-auto ${darkMode ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-900'}`}>
-            <h1 className="text-3xl font-bold mb-2">Vehicle Status</h1>
-            <p className="text-sm opacity-60 mb-6">Monitor Only - Use Physical Dashboard for Controls</p>
-            <div className="grid grid-cols-2 gap-6 h-full pb-20">
-                <div className={`p-6 rounded-3xl flex flex-col ${darkMode ? 'bg-slate-800' : 'bg-white shadow-sm'}`}>
+            <header className="mb-6">
+                <h1 className="text-3xl font-bold mb-1 flex items-center gap-3">
+                    Comfort & Eco
+                    <Leaf className="w-6 h-6 text-green-500 animate-pulse" style={{animationDuration: '3s'}}/>
+                </h1>
+                <p className="text-sm opacity-60">Cabin Climate, Environment & Energy Efficiency</p>
+            </header>
+            
+            <div className="flex gap-6 h-[85%]">
+                
+                {/* --- 左列：空调控制 (Climate Control) - Updated Logic --- */}
+                <div className={`w-1/2 p-6 rounded-3xl flex flex-col ${darkMode ? 'bg-slate-800' : 'bg-white shadow-sm'}`}>
                     <div className="flex justify-between items-center mb-6">
                         <h2 className="text-xl font-bold flex items-center"><Thermometer className="w-5 h-5 mr-2 text-red-500"/> Climate Control</h2>
+                        
+                        {/* 区域切换按钮 */}
                         <div className={`flex rounded-lg p-1 ${darkMode ? 'bg-slate-900' : 'bg-slate-200'}`}>
-                            <button onClick={() => setClimateZone('all')} className={`px-4 py-1 rounded-md text-xs font-bold transition-all ${climateZone === 'all' ? 'bg-blue-500 text-white shadow-sm' : 'opacity-50'}`}>All</button>
-                            <button onClick={() => setClimateZone('driver')} className={`px-4 py-1 rounded-md text-xs font-bold transition-all ${climateZone === 'driver' ? 'bg-blue-500 text-white shadow-sm' : 'opacity-50'}`}>Driver</button>
+                            <button 
+                                onClick={() => setClimateZone('all')} 
+                                className={`px-4 py-1 rounded-md text-xs font-bold transition-all ${climateZone === 'all' ? 'bg-blue-500 text-white shadow-sm' : 'opacity-50 hover:opacity-100'}`}
+                            >
+                                All Zones
+                            </button>
+                            <button 
+                                onClick={() => setClimateZone('driver')} 
+                                className={`px-4 py-1 rounded-md text-xs font-bold transition-all ${climateZone === 'driver' ? 'bg-blue-500 text-white shadow-sm' : 'opacity-50 hover:opacity-100'}`}
+                            >
+                                Driver
+                            </button>
                         </div>
                     </div>
-                    <div className="flex-1 flex flex-col items-center justify-center mb-6">
-                        <div className="text-6xl font-bold text-yellow-400">{temp}°C</div>
-                        <div className="text-sm opacity-50 mt-1">Target Temperature</div>
+
+                    {/* 温度显示区域 */}
+                    <div className="flex-1 flex flex-col items-center justify-center mb-6 transition-all duration-300">
+                        {/* 动态显示 currentTemp */}
+                        <div className="text-6xl font-bold text-yellow-400 tabular-nums">{currentTemp}°C</div>
+                        {/* 文字提示当前控制的是哪个区域 */}
+                        <div className="text-sm opacity-50 mt-1 font-bold tracking-wider uppercase">
+                            {climateZone === 'all' ? 'Cabin Target Temperature' : 'Driver Seat Temperature'}
+                        </div>
                     </div>
-                    <input type="range" min="16" max="30" value={temp} onChange={(e)=>setTemp(e.target.value)} className="w-full h-2 bg-gradient-to-r from-blue-500 via-green-500 to-red-500 rounded-lg appearance-none cursor-pointer mb-6" />
-                    <div className="grid grid-cols-4 gap-3">
-                         <button onClick={toggleAc} className={`aspect-square rounded-2xl flex flex-col items-center justify-center border-2 transition-all active:scale-95 ${acActive ? (darkMode ? 'border-blue-500 bg-blue-500/20 text-blue-400' : 'border-blue-500 bg-blue-50 text-blue-600') : (darkMode ? 'border-slate-600 bg-slate-700 text-slate-400' : 'border-slate-200 bg-white text-slate-400')}`}><div className="font-bold mb-1"><Fan className="w-5 h-5"/></div><div className="text-xs font-bold">A/C {acActive ? 'ON' : 'OFF'}</div></button>
-                         <button onClick={toggleHeat} className={`aspect-square rounded-2xl flex flex-col items-center justify-center border-2 transition-all active:scale-95 ${heatActive ? (darkMode ? 'border-red-500 bg-red-500/20 text-red-400' : 'border-red-500 bg-red-50 text-red-600') : (darkMode ? 'border-slate-600 bg-slate-700 text-slate-400' : 'border-slate-200 bg-white text-slate-400')}`}><div className="font-bold mb-1"><Thermometer className="w-5 h-5"/></div><div className="text-xs font-bold">Heat {heatActive ? 'ON' : 'OFF'}</div></button>
-                         <button onClick={() => { setFanSpeed((s)=>(s+1)%4); setAutoMode(false); }} className={`aspect-square rounded-2xl flex flex-col items-center justify-center border-2 transition-all active:scale-95 ${darkMode ? 'border-slate-600 bg-slate-700' : 'border-slate-200 bg-white'}`}><Fan className={`w-5 h-5 mb-1 text-blue-400 ${fanSpeed > 0 ? 'animate-spin' : ''}`} style={{animationDuration: `${1/(fanSpeed || 1)}s`}} /><div className="text-xs font-bold text-slate-500">Fan {fanSpeed === 0 ? 'Off' : fanSpeed}</div></button>
-                         <button onClick={toggleAuto} className={`aspect-square rounded-2xl flex flex-col items-center justify-center border-2 transition-all active:scale-95 ${autoMode ? (darkMode ? 'border-green-500 bg-green-500/20 text-green-400' : 'border-green-500 bg-green-50 text-green-600') : (darkMode ? 'border-slate-600 bg-slate-700 text-slate-400' : 'border-slate-200 bg-white text-slate-400')}`}><div className="font-bold mb-1"><Wind className="w-5 h-5"/></div><div className="text-xs font-bold">Auto</div></button>
+
+                    {/* 滑块：绑定 currentTemp 和 handleTempChange */}
+                    <input 
+                        type="range" 
+                        min="16" 
+                        max="30" 
+                        value={currentTemp} 
+                        onChange={handleTempChange} 
+                        className="w-full h-2 bg-gradient-to-r from-blue-500 via-green-500 to-red-500 rounded-lg appearance-none cursor-pointer mb-8" 
+                    />
+
+                    {/* 底部按钮组 */}
+                    <div className="grid grid-cols-2 gap-4 mt-auto">
+                         <button onClick={toggleAc} className={`p-4 rounded-2xl flex flex-col items-center justify-center border-2 transition-all active:scale-95 ${acActive ? (darkMode ? 'border-blue-500 bg-blue-500/20 text-blue-400' : 'border-blue-500 bg-blue-50 text-blue-600') : (darkMode ? 'border-slate-600 bg-slate-700 text-slate-400' : 'border-slate-200 bg-white text-slate-400')}`}><Fan className="w-6 h-6 mb-2"/><span className="text-xs font-bold">A/C {acActive ? 'ON' : 'OFF'}</span></button>
+                         <button onClick={toggleHeat} className={`p-4 rounded-2xl flex flex-col items-center justify-center border-2 transition-all active:scale-95 ${heatActive ? (darkMode ? 'border-red-500 bg-red-500/20 text-red-400' : 'border-red-500 bg-red-50 text-red-600') : (darkMode ? 'border-slate-600 bg-slate-700 text-slate-400' : 'border-slate-200 bg-white text-slate-400')}`}><Thermometer className="w-6 h-6 mb-2"/><span className="text-xs font-bold">Heat {heatActive ? 'ON' : 'OFF'}</span></button>
+                         <button onClick={() => { setFanSpeed((s)=>(s+1)%4); setAutoMode(false); }} className={`p-4 rounded-2xl flex flex-col items-center justify-center border-2 transition-all active:scale-95 ${darkMode ? 'border-slate-600 bg-slate-700' : 'border-slate-200 bg-white'}`}><Fan className={`w-6 h-6 mb-2 text-blue-400 ${fanSpeed > 0 ? 'animate-spin' : ''}`} style={{animationDuration: `${1/(fanSpeed || 1)}s`}} /><span className="text-xs font-bold text-slate-500">Fan {fanSpeed === 0 ? 'Off' : fanSpeed}</span></button>
+                         <button onClick={toggleAuto} className={`p-4 rounded-2xl flex flex-col items-center justify-center border-2 transition-all active:scale-95 ${autoMode ? (darkMode ? 'border-green-500 bg-green-500/20 text-green-400' : 'border-green-500 bg-green-50 text-green-600') : (darkMode ? 'border-slate-600 bg-slate-700 text-slate-400' : 'border-slate-200 bg-white text-slate-400')}`}><Wind className="w-6 h-6 mb-2"/><span className="text-xs font-bold">Auto</span></button>
                     </div>
                 </div>
 
-                <div className="flex flex-col gap-6">
-                     <div className={`p-6 rounded-3xl flex-1 ${darkMode ? 'bg-slate-800' : 'bg-white shadow-sm'}`}>
-                         <h2 className="text-xl font-bold mb-4 flex items-center"><Wind className="w-5 h-5 mr-2 text-blue-400"/> Air & Comfort</h2>
-                         <div className={`p-4 rounded-2xl mb-4 flex items-center ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
-                             <div className="w-12 h-12 rounded-full border-4 border-green-500 flex items-center justify-center font-bold text-green-500 mr-4">57</div>
-                             <div><div className="font-bold text-green-500">Good Air Quality</div><div className="text-xs opacity-50">CO2: 420ppm</div></div>
+                {/* --- 右列：环境 & 系统 (保持之前的天气预报版本) --- */}
+                <div className="w-1/2 flex flex-col gap-4">
+                     
+                     {/* 板块 1: External Environment (Apple Weather Style) */}
+                     <div className={`p-5 rounded-3xl flex flex-col gap-4 ${darkMode ? 'bg-slate-800' : 'bg-white shadow-sm'}`}>
+                         <h2 className="text-lg font-bold flex items-center"><CloudSun className="w-5 h-5 mr-2 text-blue-400"/> External Environment</h2>
+                         
+                         {/* 上半部：当前概览 */}
+                         <div className="flex gap-4">
+                             <div className={`flex-1 p-3 rounded-2xl flex items-center justify-between ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
+                                 <div>
+                                     <div className="text-[10px] font-bold opacity-60 uppercase">Air Quality</div>
+                                     <div className="text-xl font-bold text-green-500">57 <span className="text-xs opacity-70 text-slate-500 dark:text-slate-400">Excellent</span></div>
+                                 </div>
+                                 <Leaf className="w-6 h-6 text-green-500" />
+                             </div>
+                             <div className={`flex-[1.5] p-3 rounded-2xl flex items-center justify-between ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
+                                 <div>
+                                     <div className="text-[10px] font-bold opacity-60 uppercase">Current</div>
+                                     <div className="text-xl font-bold flex items-center gap-2">
+                                         18° <span className="text-xs font-normal opacity-70">Sunny</span>
+                                     </div>
+                                 </div>
+                                 <Sun className="w-8 h-8 text-orange-500 animate-spin-slow" style={{animationDuration: '10s'}}/>
+                             </div>
                          </div>
-                         <div className="grid grid-cols-2 gap-4">
-                             <button 
-                                onClick={() => setDoorsLocked(!doorsLocked)}
-                                className={`p-4 rounded-2xl border-2 flex flex-col items-center justify-center transition-all active:scale-95 ${doorsLocked ? (darkMode ? 'border-blue-500/50 bg-blue-500/10' : 'border-blue-200 bg-blue-50') : (darkMode ? 'border-orange-500/50 bg-orange-500/10' : 'border-orange-200 bg-orange-50')}`}
-                             >
-                                 {doorsLocked ? <Lock className="w-8 h-8 mb-2 text-blue-500"/> : <Unlock className="w-8 h-8 mb-2 text-orange-500"/>}
-                                 <span className={`text-xs font-bold ${doorsLocked ? 'text-blue-500' : 'text-orange-500'}`}>
-                                     {doorsLocked ? 'Doors Locked' : 'Doors Unlocked'}
-                                 </span>
-                             </button>
-                             <button onClick={() => setInteriorLights(!interiorLights)} className={`p-4 rounded-2xl border-2 flex flex-col items-center justify-center transition-all active:scale-95 ${interiorLights ? (darkMode ? 'border-yellow-500/50 bg-yellow-500/10' : 'border-yellow-200 bg-yellow-50') : (darkMode ? 'border-slate-600 bg-slate-700' : 'border-slate-200 bg-white')}`}><Zap className={`w-8 h-8 mb-2 ${interiorLights ? 'text-yellow-500 fill-current' : 'text-slate-400'}`}/><span className={`text-xs font-bold ${interiorLights ? 'text-yellow-600' : 'text-slate-500'}`}>Lights {interiorLights ? 'ON' : 'OFF'}</span></button>
+
+                         {/* 下半部：每小时预报 */}
+                         <div className={`w-full h-px ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`}></div>
+                         <div className="flex overflow-x-auto gap-2 pb-2 no-scrollbar">
+                             {hourlyForecast.map((hour, index) => (
+                                 <div key={index} className={`flex-shrink-0 flex flex-col items-center gap-2 min-w-[3.5rem] p-2 rounded-xl transition-colors ${index === 0 ? (darkMode ? 'bg-white/10' : 'bg-slate-100') : ''}`}>
+                                     <span className="text-[10px] font-bold opacity-60">{hour.time}</span>
+                                     <div className="my-1">{hour.icon}</div>
+                                     <span className="text-sm font-bold">{hour.temp}°</span>
+                                     {hour.isRain && (
+                                         <span className="text-[8px] font-bold text-blue-400">60%</span>
+                                     )}
+                                 </div>
+                             ))}
                          </div>
                      </div>
+
+
+                     {/* 板块 3: Eco-Drive Index */}
+                     <div className={`flex-1 p-5 rounded-3xl flex flex-col ${darkMode ? 'bg-slate-800' : 'bg-white shadow-sm'}`}>
+                         <h2 className="text-lg font-bold mb-4 flex items-center"><Leaf className="w-5 h-5 mr-2 text-green-500"/> Eco-Drive Index</h2>
+                         <div className="flex items-center gap-6 h-full">
+                            <div className="relative w-24 h-24 flex items-center justify-center shrink-0">
+                                <svg className="w-full h-full -rotate-90">
+                                    <circle cx="48" cy="48" r="40" stroke="currentColor" strokeWidth="8" fill="transparent" className={`${darkMode ? 'text-slate-700' : 'text-slate-100'}`} />
+                                    <circle cx="48" cy="48" r="40" stroke="currentColor" strokeWidth="8" fill="transparent" strokeDasharray={251.2} strokeDashoffset={251.2 * (1 - ecoScore / 100)} className="text-green-500 transition-all duration-1000" strokeLinecap="round" />
+                                </svg>
+                                <div className="absolute flex flex-col items-center">
+                                    <span className="text-2xl font-bold text-green-500">{ecoScore}</span>
+                                    <span className="text-[8px] uppercase font-bold opacity-50">Score</span>
+                                </div>
+                            </div>
+                            <div className="flex-1 flex flex-col justify-center gap-4">
+                                <div><div className="flex justify-between text-xs font-bold mb-1 opacity-70"><span>Acceleration</span><span>Smooth</span></div><div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden dark:bg-slate-700"><div className="h-full bg-green-500 rounded-full transition-all duration-1000" style={{width: '94%'}}></div></div></div>
+                                <div><div className="flex justify-between text-xs font-bold mb-1 opacity-70"><span>Braking</span><span>Good</span></div><div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden dark:bg-slate-700"><div className="h-full bg-blue-500 rounded-full transition-all duration-1000" style={{width: '88%'}}></div></div></div>
+                                <div><div className="flex justify-between text-xs font-bold mb-1 opacity-70"><span>Idling</span><span>0%</span></div><div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden dark:bg-slate-700"><div className="h-full bg-orange-400 rounded-full transition-all duration-1000" style={{width: '5%'}}></div></div></div>
+                            </div>
+                         </div>
+                     </div>
+
                 </div>
             </div>
         </div>
     );
 };
-
-// --- 3. 休息站详情弹窗 ---
+// --- 3. 休息站详情弹窗 (Updated: Better Size & Interactive Order) ---
 const StopDetailModal = ({ stop, onClose, onNavigate }) => {
     const [activeTab, setActiveTab] = useState('menu');
     const [veganFilter, setVeganFilter] = useState(false);
+    
+    // 新增：点餐状态管理 { itemId: 'idle' | 'loading' | 'success' }
+    const [orderStates, setOrderStates] = useState({});
+
     if (!stop) return null;
-    const menuData = stop.menu || []; 
+
+    // --- 扩充菜单数据 (模拟更多食物) ---
+    // 如果 stop 自带菜单就用自带的，否则使用默认扩充菜单
+    const defaultMenu = [
+        { id: 101, name: "Classic Burger", price: "89kr", isVegan: false, waitTime: 10, image: "🍔" },
+        { id: 102, name: "Falafel Wrap", price: "65kr", isVegan: true, waitTime: 5, image: "🌯" },
+        { id: 103, name: "Meatballs & Mash", price: "95kr", isVegan: false, waitTime: 12, image: "🍲" },
+        { id: 104, name: "Caesar Salad", price: "75kr", isVegan: false, waitTime: 6, image: "🥗" },
+        { id: 105, name: "Vegan Poke Bowl", price: "105kr", isVegan: true, waitTime: 8, image: "🍱" },
+        { id: 106, name: "Hot Dog Special", price: "45kr", isVegan: false, waitTime: 3, image: "🌭" },
+    ];
+    
+    // 合并数据 (优先使用传入的 menu，如果没有则用 defaultMenu)
+    const menuData = stop.menu && stop.menu.length > 0 ? stop.menu : defaultMenu;
     const filteredMenu = menuData.filter(item => !veganFilter || item.isVegan);
 
+    // --- 处理点餐逻辑 ---
+    const handleOrder = (itemId) => {
+        // 1. 设置该物品为加载状态
+        setOrderStates(prev => ({ ...prev, [itemId]: 'loading' }));
+
+        // 2. 模拟网络请求 (1.5秒)
+        setTimeout(() => {
+            setOrderStates(prev => ({ ...prev, [itemId]: 'success' }));
+            
+            // 3. 2秒后恢复初始状态
+            setTimeout(() => {
+                setOrderStates(prev => ({ ...prev, [itemId]: 'idle' }));
+            }, 2000);
+        }, 1500);
+    };
+
     return (
-        <div className="absolute inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
-            <div className="bg-white w-full max-w-md h-[80vh] rounded-3xl overflow-hidden shadow-2xl relative flex flex-col">
-                <button onClick={onClose} className="absolute top-4 right-4 bg-black/30 text-white p-2 rounded-full hover:bg-black/50 z-20 backdrop-blur-md active:scale-95"><X className="w-6 h-6" /></button>
-                <div className="h-40 shrink-0 bg-slate-800 relative flex items-center justify-center overflow-hidden">
+        <div className="absolute inset-0 z-[60] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm animate-in fade-in">
+            {/* 修改：尺寸缩小 max-w-2xl, h-[80vh] */}
+            <div className="bg-white w-full max-w-2xl h-[80vh] rounded-[2.5rem] overflow-hidden shadow-2xl relative flex flex-col animate-in zoom-in-95 duration-300">
+                
+                {/* 关闭按钮 */}
+                <button 
+                    onClick={onClose} 
+                    className="absolute top-4 right-4 bg-black/40 hover:bg-black/60 text-white p-3 rounded-full z-20 backdrop-blur-md active:scale-90 transition-all shadow-lg"
+                >
+                    <X className="w-6 h-6" />
+                </button>
+
+                {/* Header 图片区域：高度稍微减小 */}
+                <div className="h-56 shrink-0 bg-slate-800 relative flex items-center justify-center overflow-hidden">
                     <div className="absolute inset-0 opacity-50 bg-gradient-to-br from-blue-900 to-slate-900"></div>
-                    <Coffee className="w-16 h-16 text-white/20" />
-                    <div className="absolute bottom-0 inset-x-0 p-6 pt-12 bg-gradient-to-t from-black/80 to-transparent">
-                        <h2 className="text-xl font-bold text-white truncate">{stop.name}</h2>
-                        <div className="flex space-x-2 text-white/90 text-sm mt-1">
-                             {stop.features?.includes('wc') && <span className="flex items-center bg-white/20 px-2 rounded"><Info className="w-3 h-3 mr-1"/> WC</span>}
-                             {stop.features?.includes('food') && <span className="flex items-center bg-white/20 px-2 rounded"><Utensils className="w-3 h-3 mr-1"/> Food</span>}
+                    <Coffee className="w-24 h-24 text-white/10" />
+                    <div className="absolute bottom-0 inset-x-0 p-8 pt-24 bg-gradient-to-t from-black/80 to-transparent">
+                        <h2 className="text-4xl font-bold text-white mb-2 truncate">{stop.name}</h2>
+                        <div className="flex gap-3 text-white/90">
+                             {stop.features?.includes('wc') && <span className="flex items-center bg-white/20 px-3 py-1 rounded-lg text-sm font-bold backdrop-blur-sm"><Info className="w-4 h-4 mr-2"/> WC</span>}
+                             {stop.features?.includes('food') && <span className="flex items-center bg-white/20 px-3 py-1 rounded-lg text-sm font-bold backdrop-blur-sm"><Utensils className="w-4 h-4 mr-2"/> Food</span>}
                         </div>
                     </div>
                 </div>
-                <div className="flex border-b border-slate-100 shrink-0">
-                    <button onClick={() => setActiveTab('menu')} className={`flex-1 py-4 text-sm font-bold flex items-center justify-center space-x-2 ${activeTab === 'menu' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500'}`}><Utensils className="w-4 h-4" /><span>Menu</span></button>
-                    <button onClick={() => setActiveTab('info')} className={`flex-1 py-4 text-sm font-bold flex items-center justify-center space-x-2 ${activeTab === 'info' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500'}`}><Info className="w-4 h-4" /><span>Info</span></button>
+
+                {/* Tabs 标签页 */}
+                <div className="flex border-b border-slate-200 shrink-0 bg-white shadow-sm z-10">
+                    <button 
+                        onClick={() => setActiveTab('menu')} 
+                        className={`flex-1 py-4 text-lg font-bold flex items-center justify-center space-x-2 transition-colors ${activeTab === 'menu' ? 'text-blue-600 border-b-4 border-blue-600 bg-blue-50' : 'text-slate-400 hover:bg-slate-50'}`}
+                    >
+                        <Utensils className="w-5 h-5" /><span>Menu</span>
+                    </button>
+                    <button 
+                        onClick={() => setActiveTab('info')} 
+                        className={`flex-1 py-4 text-lg font-bold flex items-center justify-center space-x-2 transition-colors ${activeTab === 'info' ? 'text-blue-600 border-b-4 border-blue-600 bg-blue-50' : 'text-slate-400 hover:bg-slate-50'}`}
+                    >
+                        <Info className="w-5 h-5" /><span>Info</span>
+                    </button>
                 </div>
-                <div className="flex-1 overflow-y-auto bg-slate-50 p-4">
+
+                {/* 内容区域 */}
+                <div className="flex-1 overflow-y-auto bg-slate-50 p-6 custom-scrollbar">
                     {activeTab === 'menu' && (
-                        <div className="space-y-3">
-                            <div className="flex justify-between items-center mb-2">
-                                <span className="text-xs font-bold text-slate-500 uppercase">Available Items</span>
-                                <button onClick={() => setVeganFilter(!veganFilter)} className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-bold border transition-colors ${veganFilter ? 'bg-green-100 text-green-700 border-green-200' : 'bg-white border-slate-200 text-slate-500'}`}><Leaf className="w-3 h-3" /><span>Vegan</span></button>
+                        <div className="space-y-4">
+                            <div className="flex justify-between items-center mb-2 px-1">
+                                <span className="text-sm font-bold text-slate-500 uppercase tracking-wider">Available Items</span>
+                                <button onClick={() => setVeganFilter(!veganFilter)} className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold border transition-all active:scale-95 ${veganFilter ? 'bg-green-100 text-green-700 border-green-300 shadow-sm' : 'bg-white border-slate-300 text-slate-500'}`}>
+                                    <Leaf className="w-4 h-4" /><span>Vegan Only</span>
+                                </button>
                             </div>
-                            {filteredMenu.length > 0 ? filteredMenu.map(item => (
-                                <div key={item.id} className="bg-white p-3 rounded-xl shadow-sm border border-slate-100 flex space-x-3">
-                                    <div className="text-3xl bg-slate-100 w-16 h-16 rounded-lg flex items-center justify-center">{item.image}</div>
-                                    <div className="flex-1">
-                                        <div className="flex justify-between"><h3 className="font-bold text-slate-800">{item.name}</h3><span className="font-mono font-bold">{item.price}</span></div>
-                                        <div className="flex gap-1 mt-1">{item.isVegan && <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-green-100 text-green-700">Vegan</span>}</div>
-                                        <div className={`text-xs font-bold mt-2 flex items-center ${item.waitTime > 10 ? 'text-red-500' : 'text-green-600'}`}><Timer className="w-3 h-3 mr-1"/>{item.waitTime} min wait</div>
+
+                            {filteredMenu.length > 0 ? filteredMenu.map(item => {
+                                // 获取当前物品的状态
+                                const status = orderStates[item.id] || 'idle';
+
+                                return (
+                                    <div key={item.id} className="bg-white p-4 rounded-3xl shadow-sm border border-slate-200 flex items-center gap-5 transition-transform hover:scale-[1.01]">
+                                        <div className="text-4xl bg-slate-100 w-24 h-24 rounded-2xl flex items-center justify-center shrink-0 shadow-inner">{item.image}</div>
+                                        
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex justify-between items-start mb-1">
+                                                <h3 className="font-bold text-xl text-slate-800 truncate pr-2">{item.name}</h3>
+                                                <span className="font-mono font-bold text-xl text-blue-600 shrink-0">{item.price}</span>
+                                            </div>
+                                            
+                                            <div className="flex gap-2 mb-2">
+                                                {item.isVegan ? (
+                                                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-green-100 text-green-700 border border-green-200">Vegan</span>
+                                                ) : (
+                                                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-orange-100 text-orange-700 border border-orange-200">Non-Vegan</span>
+                                                )}
+                                            </div>
+                                            
+                                            <div className={`text-sm font-bold flex items-center ${item.waitTime > 10 ? 'text-red-500' : 'text-green-600'}`}>
+                                                <Timer className="w-4 h-4 mr-1.5"/>
+                                                {item.waitTime} min wait
+                                            </div>
+                                        </div>
+
+                                        {/* --- 点餐按钮 (Interactive) --- */}
+                                        <button 
+                                            onClick={() => handleOrder(item.id)}
+                                            disabled={status !== 'idle'}
+                                            className={`self-center px-6 py-3 rounded-xl text-sm font-bold shadow-md transition-all min-w-[100px] flex items-center justify-center
+                                                ${status === 'success' 
+                                                    ? 'bg-green-500 text-white shadow-green-200 scale-105' 
+                                                    : (status === 'loading' ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-wait' : 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-200 active:scale-95')
+                                                }
+                                            `}
+                                        >
+                                            {status === 'idle' && "Order"}
+                                            {status === 'loading' && <div className="w-5 h-5 border-2 border-slate-300 border-t-blue-500 rounded-full animate-spin"></div>}
+                                            {status === 'success' && <div className="flex items-center"><CheckCircle className="w-4 h-4 mr-1"/> Added</div>}
+                                        </button>
                                     </div>
-                                    <button className="self-end bg-blue-600 text-white px-3 py-1 rounded-lg text-xs font-bold active:scale-95 transition-transform">Order</button>
+                                );
+                            }) : (
+                                <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+                                    <Utensils className="w-16 h-16 mb-4 opacity-20"/>
+                                    <p className="text-lg font-medium">No items match your filter</p>
                                 </div>
-                            )) : <div className="text-center py-8 text-slate-400">No items available</div>}
+                            )}
                         </div>
                     )}
+
                     {activeTab === 'info' && (
-                        <div className="space-y-4">
-                            <div className="flex gap-2">
+                        <div className="space-y-6 h-full flex flex-col">
+                            <div className="flex gap-4 mb-auto">
                                 <button 
                                     onClick={() => { onNavigate(stop); onClose(); }}
-                                    className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-bold flex items-center justify-center hover:bg-blue-700 active:scale-95 transition-all"
+                                    className="flex-1 bg-blue-600 text-white py-8 rounded-3xl text-xl font-bold flex flex-col items-center justify-center gap-2 hover:bg-blue-700 active:scale-95 transition-all shadow-xl shadow-blue-200"
                                 >
-                                    <Navigation className="w-4 h-4 mr-2"/> Navigate
+                                    <Navigation className="w-10 h-10"/> 
+                                    <span>Navigate</span>
                                 </button>
-                                <button className="flex-1 bg-slate-200 text-slate-700 py-3 rounded-lg font-bold flex items-center justify-center hover:bg-slate-300 active:scale-95 transition-all"><Phone className="w-4 h-4 mr-2"/> Call</button>
+                                <button className="flex-1 bg-slate-200 text-slate-800 py-8 rounded-3xl text-xl font-bold flex flex-col items-center justify-center gap-2 hover:bg-slate-300 active:scale-95 transition-all">
+                                    <Phone className="w-10 h-10 opacity-70"/> 
+                                    <span>Call</span>
+                                </button>
                             </div>
-                            <div className="bg-white p-3 rounded-xl border border-slate-100"><div className="font-bold text-sm mb-1">Latest Review</div><p className="text-slate-500 text-xs italic">"Great parking space. Quick service." - Driver Mike</p></div>
+
+                            <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+                                <div className="font-bold text-lg text-slate-400 mb-3 uppercase tracking-wider">Review</div>
+                                <div className="flex gap-3">
+                                    <div className="w-12 h-12 rounded-full bg-slate-200 flex items-center justify-center font-bold text-slate-500 text-lg">MK</div>
+                                    <div>
+                                        <p className="text-slate-800 text-lg italic leading-relaxed mb-1">"Great parking space. Quick service. The coffee machine is finally fixed!"</p>
+                                        <p className="text-slate-500 text-sm font-bold">- Driver Mike, 2h ago</p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     )}
                 </div>
@@ -262,311 +582,554 @@ const RouteDetailModal = ({ shift, onClose, onStartNavigation }) => {
     );
 };
 
-// --- 4. 消息中心 ---
+// --- 4. 消息中心 (Updated: Voice Input Feedback) ---
 const MessageCenterPage = ({ onClose, messages, onMarkRead, darkMode }) => {
   const [selectedMessage, setSelectedMessage] = useState(null);
+  
+  // 输入框文字状态
+  const [replyText, setReplyText] = useState("");
+  // 发送状态 'idle' | 'sending' | 'success'
+  const [sendStatus, setSendStatus] = useState('idle');
+  // 新增：语音录入状态
+  const [isListening, setIsListening] = useState(false);
 
-  useEffect(() => { if (!selectedMessage && messages.length > 0) setSelectedMessage(messages[0]); }, [messages]);
+  useEffect(() => { 
+      if (!selectedMessage && messages.length > 0) setSelectedMessage(messages[0]); 
+  }, [messages, selectedMessage]);
+
+  useEffect(() => {
+      setReplyText("");
+      setSendStatus('idle');
+      setIsListening(false);
+  }, [selectedMessage]);
 
   const handleMarkAsRead = (msg) => {
       setSelectedMessage(msg);
       if (!msg.read) {
-          onMarkRead(msg.id);
+          onMarkRead(msg.id); 
       }
   };
 
+  // 模拟发送逻辑
+  const handleSend = (textToSend) => {
+      const content = textToSend || replyText;
+      if (!content.trim()) return;
+
+      setSendStatus('sending');
+      setTimeout(() => {
+          setSendStatus('success');
+          setReplyText("");
+          setTimeout(() => {
+              setSendStatus('idle');
+          }, 1500);
+      }, 1500);
+  };
+
+  // 新增：模拟语音输入逻辑
+  const handleVoiceInput = () => {
+      if (isListening || sendStatus !== 'idle') return;
+
+      // 1. 开始录音状态
+      setIsListening(true);
+      setReplyText(""); // 清空当前输入
+
+      // 2. 模拟录音持续 2秒
+      setTimeout(() => {
+          // 3. 录音结束，填入模拟文本
+          setIsListening(false);
+          setReplyText("I will arrive at the terminal in 10 minutes."); // 模拟识别出的文字
+      }, 2000);
+  };
+
   return (
-    <div className={`absolute inset-0 w-full h-full shadow-2xl z-50 flex flex-col transition-colors duration-300 ${darkMode ? 'bg-slate-900' : 'bg-slate-50'}`}>
-      <div className={`flex items-center justify-between p-6 border-b ${darkMode ? 'border-slate-700' : 'border-slate-200'} ${darkMode ? 'bg-slate-800' : 'bg-white'}`}>
-        <div className="flex items-center">
-             <button onClick={onClose} className={`p-2 rounded-full transition-colors mr-4 ${darkMode ? 'hover:bg-slate-700 text-slate-300' : 'hover:bg-slate-100 text-slate-500'}`}>
-                 <ChevronLeft className="w-8 h-8" />
-             </button>
-             <div className="p-2 bg-blue-100 rounded-lg mr-3"><MessageSquare className="w-6 h-6 text-blue-600"/></div>
-             <div>
-                 <h1 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-slate-800'}`}>Messages</h1>
-                 <p className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Dispatch & Alerts</p>
-             </div>
+    <div className={`absolute inset-0 w-full h-full shadow-2xl z-50 flex flex-row transition-colors duration-300 ${darkMode ? 'bg-slate-900' : 'bg-slate-50'}`}>
+      
+      {/* --- 左侧独立导航栏 --- */}
+      <div 
+        onClick={onClose} 
+        className={`w-40 border-r flex flex-col items-center justify-center shrink-0 z-50 relative cursor-pointer group transition-colors duration-300 hover:bg-black/5 active:bg-black/10 ${darkMode ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'}`}
+      >
+        <div className={`w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-active:scale-95 shadow-lg ${darkMode ? 'bg-slate-700 text-white' : 'bg-slate-100 text-slate-700'}`}>
+            <ChevronLeft className="w-10 h-10 group-hover:-translate-x-1 transition-transform" />
         </div>
-        <div className="w-8"></div> 
+        <span className={`text-xs font-bold uppercase mt-6 tracking-widest opacity-60 group-hover:opacity-100 transition-opacity ${darkMode ? 'text-white' : 'text-slate-800'}`}>
+            Back to Drive
+        </span>
       </div>
 
-      <div className="flex flex-1 overflow-hidden">
-        <div className={`w-1/3 border-r overflow-y-auto ${darkMode ? 'border-slate-700 bg-slate-800/50' : 'border-slate-200 bg-white'}`}>
-           {messages.map(msg => (
-             <div key={msg.id} onClick={() => handleMarkAsRead(msg)} className={`p-4 border-b cursor-pointer transition-all ${darkMode ? 'border-slate-700 hover:bg-slate-800' : 'border-slate-100 hover:bg-white'} ${selectedMessage?.id === msg.id ? (darkMode ? 'bg-slate-800 border-l-4 border-l-blue-500' : 'bg-blue-50 border-l-4 border-l-blue-500') : 'border-l-4 border-l-transparent'}`}>
-                <div className="flex justify-between items-start mb-1">
-                    <div className="flex items-center">
-                        {!msg.read && <div className="w-2 h-2 bg-blue-500 rounded-full mr-2 animate-pulse"></div>}
-                        <span className={`text-xs font-bold uppercase tracking-wider ${msg.priority === 'high' ? 'text-red-500' : (darkMode ? 'text-slate-400' : 'text-slate-500')}`}>{msg.sender}</span>
-                    </div>
-                    <span className={`text-[10px] ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>{msg.time}</span>
-                </div>
-                <div className={`font-bold text-sm mb-1 truncate ${!msg.read ? (darkMode ? 'text-white' : 'text-slate-900') : (darkMode ? 'text-slate-400' : 'text-slate-600')}`}>{msg.subject}</div>
-             </div>
-           ))}
+      {/* --- 右侧内容区域 --- */}
+      <div className="flex-1 flex flex-col h-full overflow-hidden">
+        
+        {/* Header */}
+        <div className={`flex items-center justify-between p-8 border-b shrink-0 ${darkMode ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'}`}>
+            <div className="flex items-center">
+                 <div className="p-3 bg-blue-100 rounded-2xl mr-4 shadow-sm"><MessageSquare className="w-8 h-8 text-blue-600"/></div>
+                 <div>
+                     <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-slate-800'}`}>Message Center</h1>
+                     <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Dispatch & System Alerts</p>
+                 </div>
+            </div>
+            <div className="bg-red-500 text-white px-4 py-2 rounded-full text-sm font-bold shadow-md">
+                {messages.filter(m => !m.read).length} Unread
+            </div>
         </div>
-        <div className={`flex-1 p-8 flex flex-col overflow-hidden ${darkMode ? 'bg-slate-900' : 'bg-slate-50'}`}>
-           {selectedMessage ? (
-             <div className={`flex flex-col h-full rounded-2xl shadow-sm border ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
-               <div className={`p-6 border-b ${darkMode ? 'border-slate-700' : 'border-slate-100'}`}>
-                 <div className="flex justify-between items-start mb-4"><h2 className={`text-2xl font-bold leading-tight ${darkMode ? 'text-white' : 'text-slate-800'}`}>{selectedMessage.subject}</h2>{selectedMessage.priority === 'high' && (<span className="bg-red-500/10 text-red-500 px-3 py-1 rounded-full text-xs font-bold flex items-center shrink-0 ml-4 border border-red-500/20"><AlertCircle className="w-4 h-4 mr-1" /> High Priority</span>)}</div>
-                 <div className={`flex items-center text-sm space-x-6 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}><div className="flex items-center"><Users className="w-4 h-4 mr-2 opacity-70" /> <span className="font-bold">{selectedMessage.sender}</span></div><div className="flex items-center"><Clock className="w-4 h-4 mr-2 opacity-70" /> <span>{selectedMessage.time}</span></div></div>
-               </div>
-               <div className="p-8 flex-1 overflow-y-auto"><p className={`text-lg leading-relaxed whitespace-pre-line ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>{selectedMessage.content}</p></div>
-               <div className={`p-4 border-t ${darkMode ? 'border-slate-700 bg-slate-800' : 'border-slate-100 bg-slate-50'}`}>
-                   <div className="flex gap-2 mb-4 overflow-x-auto pb-2 no-scrollbar">
-                       {["Received", "On my way", "Traffic heavy", "Need assistance"].map(reply => (
-                           <button key={reply} className={`px-4 py-2 rounded-full text-sm font-medium border whitespace-nowrap transition-colors ${darkMode ? 'border-slate-600 hover:bg-slate-700 text-slate-300' : 'border-slate-300 hover:bg-white text-slate-600'}`}>{reply}</button>
-                       ))}
+
+        {/* 消息主体 */}
+        <div className="flex flex-1 overflow-hidden">
+            
+            {/* 左侧列表 */}
+            <div className={`w-1/3 border-r overflow-y-auto ${darkMode ? 'border-slate-700 bg-slate-800/50' : 'border-slate-200 bg-white'}`}>
+               {messages.map(msg => (
+                 <div 
+                    key={msg.id} 
+                    onClick={() => handleMarkAsRead(msg)} 
+                    className={`p-6 border-b cursor-pointer transition-all hover:pl-8 
+                    ${darkMode ? 'border-slate-700 hover:bg-slate-800' : 'border-slate-100 hover:bg-slate-50'} 
+                    ${selectedMessage?.id === msg.id 
+                        ? (darkMode ? 'bg-slate-800 border-l-4 border-l-blue-500' : 'bg-blue-50 border-l-4 border-l-blue-500') 
+                        : 'border-l-4 border-l-transparent'}`
+                    }
+                 >
+                    <div className="flex justify-between items-start mb-2">
+                        <div className="flex items-center">
+                            {!msg.read && <div className="w-2.5 h-2.5 bg-red-500 rounded-full mr-3 animate-pulse shadow-sm"></div>}
+                            <span className={`text-xs font-bold uppercase tracking-wider ${msg.priority === 'high' ? 'text-red-500' : (darkMode ? 'text-slate-400' : 'text-slate-500')}`}>
+                                {msg.sender}
+                            </span>
+                        </div>
+                        <span className={`text-[10px] ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>{msg.time}</span>
+                    </div>
+                    <div className={`font-bold text-base truncate ${!msg.read ? (darkMode ? 'text-white' : 'text-slate-900') : (darkMode ? 'text-slate-400' : 'text-slate-600')}`}>
+                        {msg.subject}
+                    </div>
+                 </div>
+               ))}
+            </div>
+
+            {/* 右侧详情 */}
+            <div className={`flex-1 p-8 flex flex-col overflow-hidden ${darkMode ? 'bg-slate-900' : 'bg-slate-50'}`}>
+               {selectedMessage ? (
+                 <div className={`flex flex-col h-full rounded-[2rem] shadow-sm border overflow-hidden animate-in fade-in slide-in-from-right-4 duration-300 ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+                   
+                   {/* 详情 Header */}
+                   <div className={`p-8 border-b ${darkMode ? 'border-slate-700' : 'border-slate-100'}`}>
+                     <div className="flex justify-between items-start mb-6">
+                        <h2 className={`text-3xl font-bold leading-tight ${darkMode ? 'text-white' : 'text-slate-800'}`}>{selectedMessage.subject}</h2>
+                        {selectedMessage.priority === 'high' && (
+                            <span className="bg-red-500/10 text-red-500 px-4 py-2 rounded-xl text-xs font-bold flex items-center shrink-0 ml-4 border border-red-500/20">
+                                <AlertCircle className="w-5 h-5 mr-2" /> High Priority
+                            </span>
+                        )}
+                     </div>
+                     <div className={`flex items-center text-sm space-x-8 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                        <div className="flex items-center"><Users className="w-5 h-5 mr-2 opacity-70" /> <span className="font-bold">{selectedMessage.sender}</span></div>
+                        <div className="flex items-center"><Clock className="w-5 h-5 mr-2 opacity-70" /> <span>{selectedMessage.time}</span></div>
+                     </div>
                    </div>
-                   <div className={`flex gap-3 p-2 rounded-xl border ${darkMode ? 'border-slate-600 bg-slate-900' : 'border-slate-200 bg-white'}`}>
-                        <button className={`p-3 rounded-lg transition-colors ${darkMode ? 'bg-slate-700 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}><Mic className="w-5 h-5"/></button>
-                        <input type="text" placeholder="Type a reply..." className={`flex-1 bg-transparent outline-none px-2 ${darkMode ? 'text-white placeholder-slate-500' : 'text-slate-800'}`} />
-                        <button className="p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"><ArrowRight className="w-5 h-5"/></button>
+
+                   {/* 详情内容 */}
+                   <div className="p-10 flex-1 overflow-y-auto">
+                       <p className={`text-xl leading-relaxed whitespace-pre-line ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>{selectedMessage.content}</p>
                    </div>
-               </div>
-             </div>
-           ) : (<div className="flex-1 flex flex-col items-center justify-center text-slate-400"><Mail className="w-20 h-20 mb-4 opacity-10" /><p className="text-lg font-medium">Select a message</p></div>)}
+
+                   {/* 快速回复区 */}
+                   <div className={`p-6 border-t ${darkMode ? 'border-slate-700 bg-slate-800' : 'border-slate-100 bg-slate-50'}`}>
+                       <div className="flex gap-3 mb-6 overflow-x-auto pb-2 no-scrollbar">
+                           {["Received", "On my way", "Traffic heavy", "Need assistance"].map(reply => (
+                               <button 
+                                key={reply} 
+                                onClick={() => handleSend(reply)} 
+                                disabled={sendStatus !== 'idle' || isListening}
+                                className={`px-5 py-2.5 rounded-xl text-sm font-bold border whitespace-nowrap transition-all active:scale-95 
+                                    ${darkMode 
+                                        ? 'border-slate-600 hover:bg-slate-700 text-slate-300 disabled:opacity-50' 
+                                        : 'border-slate-300 hover:bg-white text-slate-600 disabled:opacity-50'}`}
+                               >
+                                   {reply}
+                               </button>
+                           ))}
+                       </div>
+                       
+                       {/* 输入栏容器 */}
+                       <div className={`flex gap-3 p-2 rounded-2xl border transition-colors duration-300 
+                            ${darkMode ? 'border-slate-600 bg-slate-900' : 'border-slate-200 bg-white'} 
+                            ${sendStatus === 'success' ? 'border-green-500 ring-1 ring-green-500' : ''}
+                            ${isListening ? 'border-red-500 ring-1 ring-red-500 bg-red-50/10' : ''} 
+                       `}>
+                            {/* --- 语音按钮 (Modified) --- */}
+                            <button 
+                                onClick={handleVoiceInput}
+                                disabled={sendStatus !== 'idle'}
+                                className={`p-4 rounded-xl transition-all duration-300 active:scale-95
+                                    ${isListening 
+                                        ? 'bg-red-500 text-white animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.5)]' // 录音中：红色闪烁
+                                        : (darkMode ? 'bg-slate-700 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200') // 待机
+                                    }`}
+                            >
+                                <Mic className={`w-6 h-6 ${isListening ? 'animate-bounce' : ''}`}/>
+                            </button>
+                            
+                            {/* 输入框 */}
+                            <input 
+                                type="text" 
+                                value={replyText}
+                                onChange={(e) => setReplyText(e.target.value)}
+                                onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+                                disabled={sendStatus !== 'idle' || isListening}
+                                placeholder={
+                                    isListening ? "Listening..." :
+                                    sendStatus === 'sending' ? "Sending..." : 
+                                    (sendStatus === 'success' ? "Message Sent!" : "Type a reply...")
+                                }
+                                className={`flex-1 bg-transparent outline-none px-4 text-lg transition-all 
+                                    ${darkMode ? 'text-white placeholder-slate-500' : 'text-slate-800'} 
+                                    ${sendStatus === 'success' ? 'text-green-600 font-bold' : ''}
+                                    ${isListening ? 'text-red-500 italic' : ''}
+                                `} 
+                            />
+                            
+                            {/* 发送按钮 */}
+                            <button 
+                                onClick={() => handleSend()} 
+                                disabled={sendStatus !== 'idle' || (!replyText.trim()) || isListening}
+                                className={`p-4 rounded-xl transition-all duration-300 active:scale-95 flex items-center justify-center min-w-[60px]
+                                    ${sendStatus === 'success' 
+                                        ? 'bg-green-500 text-white' 
+                                        : (sendStatus === 'sending' ? 'bg-slate-400 text-white cursor-wait' : 'bg-blue-600 text-white hover:bg-blue-700')
+                                    }
+                                    ${(!replyText.trim() && sendStatus === 'idle' && !isListening) ? 'opacity-50 cursor-not-allowed' : ''}
+                                `}
+                            >
+                                {sendStatus === 'idle' && <ArrowRight className="w-6 h-6"/>}
+                                {sendStatus === 'sending' && <ArrowRight className="w-6 h-6 animate-spin"/>}
+                                {sendStatus === 'success' && <CheckCircle className="w-6 h-6 animate-in zoom-in duration-300"/>}
+                            </button>
+                       </div>
+                   </div>
+                 </div>
+               ) : (
+                   <div className="flex-1 flex flex-col items-center justify-center text-slate-400">
+                       <Mail className="w-24 h-24 mb-6 opacity-10" />
+                       <p className="text-xl font-medium">Select a message to view details</p>
+                   </div>
+               )}
+            </div>
         </div>
       </div>
     </div>
   );
 };
+// --- 5. 休息模式 (Updated: Online Video Background & Real Audio) ---
+// --- 5. 休息模式 (Updated: YouTube Video Integration) ---
+import { 
+ ToggleLeft, ToggleRight, History // 引入 Toggle 图标
+} from 'lucide-react';
 
-// --- 5. 休息模式 (Merged: Functional Features + New Animation) ---
+
 const RestModeView = ({ onClose, darkMode }) => {
-    // --- 1. State Management (保留原有功能状态) ---
+    // --- 1. State Management ---
     const [mood, setMood] = useState('neutral');
     const [quoteIndex, setQuoteIndex] = useState(0);
     const [isPlayingMusic, setIsPlayingMusic] = useState(false);
-    const [playingVideo, setPlayingVideo] = useState(null); // 保留：视频播放状态
-    const [showHistory, setShowHistory] = useState(false);  // 保留：历史记录显示状态
     
-    // 保留：历史记录数据
+    // 开关：控制背景视频
+    const [showBackgroundVideo, setShowBackgroundVideo] = useState(false);
+    
+    // 历史记录相关 (已恢复)
+    const [showHistory, setShowHistory] = useState(false);
     const [moodHistory, setMoodHistory] = useState([
-        { id: 1, time: "14:30", mood: "happy", note: "Great traffic flow" },
+        { id: 1, time: "10:30", mood: "happy", note: "Great traffic flow" },
         { id: 2, time: "12:15", mood: "tired", note: "Busy lunch rush" },
     ]);
-
-    // 新增：呼吸动画文字状态
+    
+    // 视频模态框状态
+    const [playingVideo, setPlayingVideo] = useState(null); 
+    const [videoLoaded, setVideoLoaded] = useState(false);
+    
+    const audioRef = useRef(null);
     const [breathingText, setBreathingText] = useState("Breathe In");
 
-    // --- 2. Configuration & Helpers ---
-    
-    // 新增：情绪主题配置 (用于背景色和动画颜色)
+    // --- 2. Resources ---
+    const backgroundVideoUrl = "https://videos.pexels.com/video-files/1409899/1409899-hd_1920_1080_25fps.mp4";
+
+    const youtubeVideos = {
+        eye: { id: "_xWIlvOS_QI", title: "5-Min Eye Yoga", desc: "Follow the dot on the screen. Blink naturally." },
+        body: { id: "bEDH_uTcdf4", title: "Seated Stretches", desc: "Simple seated stretches to relieve back tightness." }
+    };
+
+    // --- 3. Themes & Styles ---
     const moodThemes = {
         happy: {
-            bg: darkMode ? 'bg-orange-950' : 'bg-orange-50',
-            accent: 'text-orange-500',
-            circle: 'bg-orange-400',
-            border: 'border-orange-200',
-            lightBg: 'bg-orange-100',
+            bgGradient: darkMode ? 'from-green-900 to-black' : 'from-green-100 to-white',
+            audioUrl: "https://www.orangefreesounds.com/wp-content/uploads/2022/02/Forest-stream-sounds.mp3", 
+            accent: darkMode ? 'text-green-400' : 'text-green-600',
+            circle: darkMode ? 'bg-green-400' : 'bg-green-500',
             quote: ["Great Job today!", "Keep the energy up!", "You are a star!"],
-            icon: <Sun className="w-32 h-32 text-orange-400 opacity-10 absolute top-10 right-10 animate-spin-slow" style={{animationDuration: '20s'}} />
+            icon: <Sun className={`w-32 h-32 absolute top-10 right-10 animate-spin-slow ${darkMode ? 'text-green-300 opacity-10' : 'text-green-500 opacity-20'}`} style={{animationDuration: '20s'}} />
         },
         neutral: {
-            bg: darkMode ? 'bg-emerald-950' : 'bg-emerald-50',
-            accent: 'text-emerald-500',
-            circle: 'bg-emerald-400',
-            border: 'border-emerald-200',
-            lightBg: 'bg-emerald-100',
-            quote: ["Breathe in...", "Clear your mind", "Relax your shoulders"],
-            icon: <Leaf className="w-32 h-32 text-emerald-400 opacity-10 absolute bottom-10 left-10 animate-bounce" style={{animationDuration: '4s'}} />
+            bgGradient: darkMode ? 'from-teal-900 to-black' : 'from-teal-100 to-white',
+            audioUrl: "https://www.orangefreesounds.com/wp-content/uploads/2022/02/Forest-stream-sounds.mp3",
+            accent: darkMode ? 'text-teal-300' : 'text-teal-600',
+            circle: darkMode ? 'bg-teal-400' : 'bg-teal-500',
+            quote: ["Breathe in...", "Find your balance", "Stay calm"],
+            icon: <Leaf className={`w-32 h-32 absolute bottom-10 left-10 animate-bounce ${darkMode ? 'text-teal-300 opacity-10' : 'text-teal-500 opacity-20'}`} style={{animationDuration: '4s'}} />
         },
         tired: {
-            bg: darkMode ? 'bg-indigo-950' : 'bg-indigo-50',
-            accent: 'text-indigo-500',
-            circle: 'bg-indigo-400',
-            border: 'border-indigo-200',
-            lightBg: 'bg-indigo-100',
-            quote: ["It's okay to rest", "Close your eyes for a bit", "Safety comes first"],
-            icon: <Moon className="w-32 h-32 text-indigo-400 opacity-10 absolute top-10 right-10" />
+            bgGradient: darkMode ? 'from-blue-900 to-black' : 'from-blue-100 to-white',
+            audioUrl: "https://www.orangefreesounds.com/wp-content/uploads/2022/02/Forest-stream-sounds.mp3",
+            accent: darkMode ? 'text-blue-300' : 'text-blue-600',
+            circle: darkMode ? 'bg-blue-400' : 'bg-blue-500',
+            quote: ["It's okay to rest", "Close your eyes", "Recharge now"],
+            icon: <Moon className={`w-32 h-32 absolute top-10 right-10 ${darkMode ? 'text-blue-300 opacity-10' : 'text-blue-500 opacity-20'}`} />
         }
     };
 
     const currentTheme = moodThemes[mood];
 
-    // Effect: 呼吸文字轮播
+    // Helper classes
+    const glassClass = darkMode 
+        ? "bg-black/20 border-white/10 text-white hover:bg-black/40" 
+        : "bg-white/60 border-black/5 text-slate-800 hover:bg-white/80 shadow-sm";
+    const panelClass = darkMode 
+        ? "bg-black/40 border-white/10 text-white" 
+        : "bg-white/60 border-white/50 text-slate-800 shadow-sm";
+    const textClass = darkMode ? "text-white" : "text-slate-800";
+    const subTextClass = darkMode ? "text-white/50" : "text-slate-500";
+
+    // --- Audio Logic ---
+    useEffect(() => {
+        if (audioRef.current) audioRef.current.pause();
+        audioRef.current = new Audio(currentTheme.audioUrl);
+        audioRef.current.loop = true;
+        if (isPlayingMusic) audioRef.current.play().catch(e => console.log("Audio play failed:", e));
+        return () => { if (audioRef.current) audioRef.current.pause(); };
+    }, [mood]);
+
+    const toggleMusic = () => {
+        if (!audioRef.current) return;
+        if (isPlayingMusic) audioRef.current.pause();
+        else audioRef.current.play().catch(e => console.log("Audio play failed:", e));
+        setIsPlayingMusic(!isPlayingMusic);
+    };
+    
+    useEffect(() => {
+        return () => { if (audioRef.current) audioRef.current.pause(); };
+    }, []);
+
+    // --- Effects ---
     useEffect(() => {
         const interval = setInterval(() => {
             setBreathingText(prev => prev === "Breathe In" ? "Breathe Out" : "Breathe In");
-        }, 4000); // 4秒一换
+        }, 4000); 
         return () => clearInterval(interval);
     }, []);
 
-    // Effect: 语录轮播 (保留原有逻辑)
     useEffect(() => { 
         const interval = setInterval(() => setQuoteIndex(p => (p + 1) % currentTheme.quote.length), 4000); 
         return () => clearInterval(interval); 
     }, [mood, currentTheme.quote.length]);
 
-    // Handler: 切换情绪并记录历史 (保留原有逻辑)
+    // --- 核心逻辑恢复：切换 Mood 并记录历史 ---
     const handleMoodChange = (newMood) => { 
         setMood(newMood); 
         setQuoteIndex(0); 
-        setMoodHistory([{ 
-            id: Date.now(), 
-            time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}), 
-            mood: newMood, 
-            note: newMood === 'happy' ? "Feeling good!" : "Taking a break" 
-        }, ...moodHistory]); 
+        
+        // 自动添加一条历史记录
+        const notes = {
+            happy: "Feeling energetic!",
+            neutral: "Balanced state",
+            tired: "Taking a break"
+        };
+        
+        const newEntry = {
+            id: Date.now(),
+            time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}),
+            mood: newMood,
+            note: notes[newMood]
+        };
+        
+        setMoodHistory([newEntry, ...moodHistory]);
     };
 
     return (
-        <div className={`absolute inset-0 w-full h-full shadow-2xl z-50 flex flex-col transition-all duration-1000 ${currentTheme.bg}`}>
-            {/* 背景装饰 */}
-            <div className={`absolute inset-0 bg-gradient-to-br from-white/5 to-black/5 opacity-50`}></div>
-            {currentTheme.icon}
+        <div className={`absolute inset-0 w-full h-full shadow-2xl z-50 flex flex-row overflow-hidden transition-all duration-1000 ${darkMode ? 'bg-slate-900 text-white' : 'bg-slate-50 text-slate-900'}`}>
+            
+            {/* Background Layers */}
+            <div className={`absolute inset-0 bg-gradient-to-br ${currentTheme.bgGradient} transition-colors duration-1000 -z-30`}></div>
+            <div className={`absolute inset-0 transition-opacity duration-1000 -z-20 overflow-hidden ${showBackgroundVideo ? 'opacity-100' : 'opacity-0'}`}>
+                <video key="bg-video" autoPlay loop muted playsInline className="w-full h-full object-cover" onLoadedData={() => setVideoLoaded(true)}>
+                    <source src={backgroundVideoUrl} type="video/mp4" />
+                </video>
+                <div className={`absolute inset-0 ${darkMode ? 'bg-black/50' : 'bg-white/20'}`}></div>
+            </div>
 
-            {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-black/5 relative z-10">
-                <div className="flex items-center">
-                    <button onClick={onClose} className={`p-2 rounded-full transition-colors mr-4 hover:bg-black/10 ${darkMode ? 'text-white' : 'text-slate-800'}`}>
-                        <ChevronLeft className="w-8 h-8" />
-                    </button>
+            {/* Left Nav */}
+            <div onClick={onClose} className={`w-40 border-r flex flex-col items-center justify-center shrink-0 z-50 relative backdrop-blur-md cursor-pointer group transition-all ${darkMode ? 'border-white/10 bg-black/20 hover:bg-black/40' : 'border-black/10 bg-white/30 hover:bg-white/50'}`}>
+                <div className={`w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-active:scale-95 shadow-lg backdrop-blur-sm border ${darkMode ? 'bg-white/10 border-white/20 text-white' : 'bg-white/80 border-white text-slate-800'}`}>
+                    <ChevronLeft className="w-10 h-10 group-hover:-translate-x-1 transition-transform" />
+                </div>
+                <span className={`text-xs font-bold uppercase mt-6 tracking-widest opacity-80 group-hover:opacity-100 transition-opacity ${textClass}`}>Back</span>
+            </div>
+
+            {/* Main Content */}
+            <div className="flex-1 flex flex-col relative z-20 overflow-hidden">
+                {currentTheme.icon}
+
+                {/* Header */}
+                <div className={`flex items-center justify-between p-8 border-b relative z-10 shrink-0 ${darkMode ? 'border-white/10' : 'border-black/10'}`}>
                     <div className="flex items-center">
-                        <div className={`p-2 rounded-lg mr-3 shadow-sm ${darkMode ? 'bg-white/10' : 'bg-white'}`}>
-                            <Coffee className={`w-6 h-6 ${currentTheme.accent}`}/>
+                        <div className={`p-3 rounded-2xl mr-4 shadow-sm backdrop-blur-md border ${darkMode ? 'bg-white/10 border-white/20' : 'bg-white/80 border-white/40'}`}>
+                            <Coffee className={`w-8 h-8 ${currentTheme.accent}`}/>
                         </div>
                         <div>
-                            <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-slate-800'}`}>Rest Mode</h2>
-                            <p className={`text-xs ${darkMode ? 'text-white/60' : 'text-slate-500'}`}>Recharge yourself</p>
+                            <h2 className={`text-3xl font-bold shadow-black drop-shadow-sm ${textClass}`}>Rest Mode</h2>
+                            <p className={`text-sm ${subTextClass}`}>Recharge & Relax</p>
+                        </div>
+                    </div>
+                </div>
+                
+                {/* Columns */}
+                <div className="flex-1 flex gap-8 p-8 relative z-10 overflow-hidden">
+                    
+                    {/* Col 1: Videos */}
+                    <div className="w-1/4 flex flex-col gap-4 justify-center animate-in slide-in-from-left-4 duration-700">
+                        <button onClick={() => setPlayingVideo('eye')} className={`p-5 rounded-3xl border text-left transition-all active:scale-95 backdrop-blur-md group relative overflow-hidden ${glassClass}`}>
+                            <div className="flex justify-between items-start relative z-10">
+                                <Eye className={`w-8 h-8 mb-2 ${currentTheme.accent}`} />
+                                <Play className={`w-6 h-6 opacity-0 group-hover:opacity-100 transition-opacity rounded-full p-1 ${darkMode ? 'text-white bg-white/20' : 'text-slate-700 bg-black/10'}`} />
+                            </div>
+                            <div className={`font-bold text-lg relative z-10 ${textClass}`}>Eye Care</div>
+                            <div className={`text-xs opacity-70 relative z-10 ${subTextClass}`}>5 min routine</div>
+                        </button>
+                        <button onClick={() => setPlayingVideo('body')} className={`p-5 rounded-3xl border text-left transition-all active:scale-95 backdrop-blur-md group relative overflow-hidden ${glassClass}`}>
+                            <div className="flex justify-between items-start relative z-10">
+                                <Activity className={`w-8 h-8 mb-2 ${currentTheme.accent}`} />
+                                <Play className={`w-6 h-6 opacity-0 group-hover:opacity-100 transition-opacity rounded-full p-1 ${darkMode ? 'text-white bg-white/20' : 'text-slate-700 bg-black/10'}`} />
+                            </div>
+                            <div className={`font-bold text-lg relative z-10 ${textClass}`}>Body Stretch</div>
+                            <div className={`text-xs opacity-70 relative z-10 ${subTextClass}`}>Relieve pain</div>
+                        </button>
+                    </div>
+
+                    {/* Col 2: Breathing (Center) */}
+                    <div className="flex-1 flex flex-col items-center justify-center relative">
+                        <div className="relative flex items-center justify-center">
+                            <div className={`absolute rounded-full opacity-30 animate-ping ${currentTheme.circle}`} style={{width: '320px', height: '320px', animationDuration: '4s'}}></div>
+                            <div className={`w-72 h-72 rounded-full opacity-40 transition-all duration-[4000ms] ease-in-out ${currentTheme.circle} ${breathingText === "Breathe In" ? 'scale-110' : 'scale-75'}`}></div>
+                            <div className={`absolute w-56 h-56 rounded-full shadow-2xl flex items-center justify-center backdrop-blur-lg border ${darkMode ? 'bg-white/5 border-white/10 text-white' : 'bg-white/80 border-white/50 text-slate-800'}`}>
+                                <div className="text-center">
+                                    <div className={`text-3xl font-bold transition-all duration-1000 ${breathingText === "Breathe In" ? 'tracking-widest' : 'tracking-normal'}`}>{breathingText}</div>
+                                    <div className="text-xs opacity-50 mt-2 uppercase tracking-wider">Guide</div>
+                                </div>
+                            </div>
+                        </div>
+                        <h1 className={`text-3xl font-bold mt-16 transition-colors duration-500 text-center px-8 drop-shadow-md ${currentTheme.accent}`}>"{currentTheme.quote[quoteIndex]}"</h1>
+                    </div>
+
+                    {/* Col 3: Controls & History */}
+                    <div className="w-1/4 flex flex-col justify-end items-end gap-4 relative">
+                        
+                        {/* 1. Control Panel */}
+                        <div className={`w-full flex flex-col gap-3 border p-4 rounded-3xl backdrop-blur-md ${panelClass}`}>
+                            {/* Sound */}
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className={`p-2 rounded-full ${isPlayingMusic ? (darkMode ? 'bg-green-500/20 text-green-400' : 'bg-green-100 text-green-600') : (darkMode ? 'bg-white/10 text-white/50' : 'bg-black/5 text-slate-400')}`}>
+                                        {isPlayingMusic ? <Volume2 className="w-4 h-4"/> : <Music className="w-4 h-4"/>}
+                                    </div>
+                                    <span className={`text-sm font-bold ${textClass}`}>Sound</span>
+                                </div>
+                                <button onClick={toggleMusic} className={`w-10 h-6 rounded-full flex items-center p-1 transition-colors ${isPlayingMusic ? 'bg-green-500 justify-end' : 'bg-slate-400/50 justify-start'}`}>
+                                    <div className="w-4 h-4 bg-white rounded-full shadow-sm"></div>
+                                </button>
+                            </div>
+                            
+                            <div className={`w-full h-px ${darkMode ? 'bg-white/10' : 'bg-black/5'}`}></div>
+
+                            {/* Video Switch */}
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className={`p-2 rounded-full ${showBackgroundVideo ? (darkMode ? 'bg-blue-500/20 text-blue-400' : 'bg-blue-100 text-blue-600') : (darkMode ? 'bg-white/10 text-white/50' : 'bg-black/5 text-slate-400')}`}>
+                                        <Eye className="w-4 h-4"/>
+                                    </div>
+                                    <span className={`text-sm font-bold ${textClass}`}>Video BG</span>
+                                </div>
+                                <button onClick={() => setShowBackgroundVideo(!showBackgroundVideo)} className="transition-colors">
+                                    {showBackgroundVideo ? <ToggleRight className="w-8 h-8 text-green-500" /> : <ToggleLeft className={`w-8 h-8 ${darkMode ? 'text-slate-500' : 'text-slate-300'}`} />}
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* 2. History Toggle Button (恢复的按钮) */}
+                        <button 
+                            onClick={() => setShowHistory(true)}
+                            className={`w-full flex items-center justify-center gap-2 p-3 rounded-2xl border backdrop-blur-md transition-all active:scale-95 ${glassClass}`}
+                        >
+                            <History className="w-4 h-4 opacity-70" />
+                            <span className="text-sm font-bold">View Session Log</span>
+                        </button>
+
+                        {/* 3. Mood Switcher */}
+                        <div className={`w-full p-4 rounded-[2rem] backdrop-blur-xl border ${darkMode ? 'bg-black/30 border-white/10' : 'bg-white/50 border-white/40'}`}>
+                            <div className="flex justify-between gap-2">
+                                 <button onClick={() => handleMoodChange('happy')} className={`flex-1 aspect-square rounded-2xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 ${mood === 'happy' ? 'bg-green-500 text-white shadow-[0_0_15px_rgba(34,197,94,0.5)]' : (darkMode ? 'bg-white/5 text-white/50 hover:bg-white/20' : 'bg-white/60 text-slate-400 hover:bg-white')}`}><Smile className="w-8 h-8" /></button>
+                                 <button onClick={() => handleMoodChange('neutral')} className={`flex-1 aspect-square rounded-2xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 ${mood === 'neutral' ? 'bg-teal-500 text-white shadow-[0_0_15px_rgba(20,184,166,0.5)]' : (darkMode ? 'bg-white/5 text-white/50 hover:bg-white/20' : 'bg-white/60 text-slate-400 hover:bg-white')}`}><Meh className="w-8 h-8" /></button>
+                                 <button onClick={() => handleMoodChange('tired')} className={`flex-1 aspect-square rounded-2xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 ${mood === 'tired' ? 'bg-blue-500 text-white shadow-[0_0_15px_rgba(59,130,246,0.5)]' : (darkMode ? 'bg-white/5 text-white/50 hover:bg-white/20' : 'bg-white/60 text-slate-400 hover:bg-white')}`}><Frown className="w-8 h-8" /></button>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-            
-            <div className="flex-1 flex gap-8 p-8 relative z-10">
-                {/* --- 左侧：功能区 (样式更新，功能保留) --- */}
-                <div className="w-1/4 flex flex-col gap-4">
-                    <button 
-                        onClick={() => setPlayingVideo('eye')} // 触发原有视频逻辑
-                        className={`p-6 rounded-3xl border-2 text-left transition-all hover:shadow-lg active:scale-95 backdrop-blur-sm ${darkMode ? 'bg-white/5 border-white/10 text-white' : 'bg-white/60 border-white text-slate-800'}`}
-                    >
-                        <Eye className={`w-8 h-8 mb-2 ${currentTheme.accent}`} />
-                        <div className="font-bold text-lg">Eye Care</div>
-                        <div className="text-xs opacity-70">5 min routine</div>
-                    </button>
-                    
-                    <button 
-                        onClick={() => setPlayingVideo('body')} // 触发原有视频逻辑
-                        className={`p-6 rounded-3xl border-2 text-left transition-all hover:shadow-lg active:scale-95 backdrop-blur-sm ${darkMode ? 'bg-white/5 border-white/10 text-white' : 'bg-white/60 border-white text-slate-800'}`}
-                    >
-                        <Activity className={`w-8 h-8 mb-2 ${currentTheme.accent}`} />
-                        <div className="font-bold text-lg">Body Stretch</div>
-                        <div className="text-xs opacity-70">Relieve back pain</div>
-                    </button>
-                </div>
 
-                {/* --- 中间：呼吸动画 (完全更新为呼吸效果) --- */}
-                <div className="flex-1 flex flex-col items-center justify-center relative">
-                    {/* 呼吸圆环组 */}
-                    <div className="relative flex items-center justify-center">
-                        {/* 1. 外扩散圈 (Ping) */}
-                        <div className={`absolute rounded-full opacity-30 animate-ping ${currentTheme.circle}`} style={{width: '300px', height: '300px', animationDuration: '4s'}}></div>
-                        
-                        {/* 2. 呼吸圈 (Scale) - 核心动画 */}
-                        <div className={`w-64 h-64 rounded-full opacity-40 transition-all duration-[4000ms] ease-in-out ${currentTheme.circle} ${breathingText === "Breathe In" ? 'scale-110' : 'scale-75'}`}></div>
-                        
-                        {/* 3. 中心静态圈 & 文字 */}
-                        <div className={`absolute w-48 h-48 rounded-full shadow-2xl flex items-center justify-center backdrop-blur-md transition-colors duration-500 ${darkMode ? 'bg-slate-800/80 text-white' : 'bg-white/80 text-slate-800'}`}>
-                            <div className="text-center">
-                                <div className={`text-2xl font-bold transition-all duration-1000 ${breathingText === "Breathe In" ? 'tracking-widest' : 'tracking-normal'}`}>
-                                    {breathingText}
-                                </div>
-                                <div className="text-xs opacity-50 mt-1 uppercase tracking-wider">Guide</div>
-                            </div>
+            {/* --- History Modal (Overlay) --- */}
+            {showHistory && (
+                <div className="absolute inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-center justify-end p-8 animate-in fade-in duration-200">
+                    <div className={`w-1/3 h-full rounded-3xl shadow-2xl flex flex-col animate-in slide-in-from-right duration-300 border ${darkMode ? 'bg-slate-900 border-white/10 text-white' : 'bg-white border-white/40 text-slate-900'}`} onClick={(e) => e.stopPropagation()}>
+                        <div className={`p-6 border-b flex items-center justify-between ${darkMode ? 'border-white/10' : 'border-black/5'}`}>
+                            <h3 className="font-bold text-xl flex items-center gap-2"><History className="w-5 h-5"/> Session History</h3>
+                            <button onClick={() => setShowHistory(false)} className={`p-2 rounded-full hover:bg-black/10 transition-colors ${darkMode ? 'hover:bg-white/10' : ''}`}><X className="w-5 h-5"/></button>
                         </div>
-                    </div>
-                    
-                    {/* 动态语录 */}
-                    <h1 className={`text-2xl font-bold mt-12 transition-colors duration-500 text-center px-8 ${currentTheme.accent}`}>
-                        "{currentTheme.quote[quoteIndex]}"
-                    </h1>
-                </div>
-
-                {/* --- 右侧：控制与历史 (样式更新，功能保留) --- */}
-                <div className="w-1/4 flex flex-col justify-end items-end gap-6 relative">
-                    {/* 1. 白噪音开关 (保留) */}
-                    <div className="flex items-center gap-4">
-                        <span className={`text-xs uppercase font-bold ${darkMode ? 'text-white/60' : 'text-slate-500'}`}>White Noise</span>
-                        <button onClick={() => setIsPlayingMusic(!isPlayingMusic)} className={`w-12 h-8 rounded-full flex items-center p-1 transition-colors ${isPlayingMusic ? 'bg-green-500 justify-end' : 'bg-slate-300 justify-start'}`}>
-                            <div className="w-6 h-6 bg-white rounded-full shadow-sm flex items-center justify-center">
-                                {isPlayingMusic ? <Volume2 className="w-3 h-3 text-green-500"/> : <Music className="w-3 h-3 text-slate-400"/>}
-                            </div>
-                        </button>
-                    </div>
-                    
-                    <div className={`w-full h-px my-2 ${darkMode ? 'bg-white/10' : 'bg-black/10'}`}></div>
-
-                    {/* 2. 历史记录 (保留逻辑，适配样式) */}
-                    <div className="relative">
-                        <button onClick={() => setShowHistory(!showHistory)} className={`flex items-center space-x-2 text-xs font-bold px-3 py-2 rounded-full mb-4 transition-all ${showHistory ? (darkMode ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-800') : (darkMode ? 'text-white/50 hover:bg-white/10' : 'text-slate-400 hover:bg-slate-100')}`}>
-                            <HistoryIcon className="w-4 h-4" /><span>View History</span>
-                        </button>
-                        
-                        {/* 历史下拉框 */}
-                        {showHistory && (
-                            <div className={`absolute bottom-16 right-0 w-72 rounded-2xl shadow-2xl border p-4 animate-in slide-in-from-bottom-5 fade-in z-50 ${darkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-100 text-slate-800'}`}>
-                                <div className="flex justify-between items-center mb-4 border-b border-slate-500/20 pb-2">
-                                    <h3 className="font-bold flex items-center"><HistoryIcon className={`w-4 h-4 mr-2 ${currentTheme.accent}`}/> Mood Log</h3>
-                                    <button onClick={() => setShowHistory(false)}><X className="w-4 h-4 opacity-50"/></button>
-                                </div>
-                                <div className="space-y-3 max-h-60 overflow-y-auto pr-1 custom-scrollbar">
-                                    {moodHistory.map((item) => (
-                                        <div key={item.id} className="flex items-start gap-3 text-sm">
-                                            <div className={`w-2 h-2 rounded-full mt-1.5 ${item.mood === 'happy' ? 'bg-orange-400' : item.mood === 'tired' ? 'bg-indigo-400' : 'bg-emerald-400'}`}></div>
-                                            <div className="flex-1 pb-3 border-b border-slate-500/10">
-                                                <div className="flex justify-between"><span className="font-bold capitalize">{item.mood}</span><span className="text-[10px] opacity-50 font-mono">{item.time}</span></div>
-                                                <div className="text-xs opacity-70 mt-0.5 line-clamp-2">{item.note}</div>
-                                            </div>
+                        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                            {moodHistory.map((item) => (
+                                <div key={item.id} className={`p-4 rounded-2xl border flex items-center justify-between ${darkMode ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-100'}`}>
+                                    <div>
+                                        <div className="flex items-center gap-2 mb-1">
+                                            {item.mood === 'happy' && <Smile className="w-4 h-4 text-green-500"/>}
+                                            {item.mood === 'neutral' && <Meh className="w-4 h-4 text-teal-500"/>}
+                                            {item.mood === 'tired' && <Frown className="w-4 h-4 text-blue-500"/>}
+                                            <span className="font-bold capitalize">{item.mood}</span>
                                         </div>
-                                    ))}
+                                        <div className={`text-xs ${subTextClass}`}>{item.note}</div>
+                                    </div>
+                                    <div className={`text-xs font-mono flex items-center gap-1 ${subTextClass}`}>
+                                        <Clock className="w-3 h-3"/> {item.time}
+                                    </div>
                                 </div>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* 3. 情绪切换按钮 (保留) */}
-                    <div className={`p-4 rounded-3xl backdrop-blur-md border ${darkMode ? 'bg-black/20 border-white/10' : 'bg-white/40 border-white/50'}`}>
-                        <div className="flex flex-col gap-4">
-                             <button onClick={() => handleMoodChange('happy')} className={`p-3 rounded-full transition-all hover:scale-110 active:scale-95 ${mood === 'happy' ? 'bg-orange-100 text-orange-600 ring-4 ring-orange-200' : (darkMode ? 'bg-white/10 text-white/50' : 'bg-white text-slate-300 shadow-sm')}`}><Smile className="w-8 h-8" /></button>
-                             <button onClick={() => handleMoodChange('neutral')} className={`p-3 rounded-full transition-all hover:scale-110 active:scale-95 ${mood === 'neutral' ? 'bg-emerald-100 text-emerald-600 ring-4 ring-emerald-200' : (darkMode ? 'bg-white/10 text-white/50' : 'bg-white text-slate-300 shadow-sm')}`}><Meh className="w-8 h-8" /></button>
-                             <button onClick={() => handleMoodChange('tired')} className={`p-3 rounded-full transition-all hover:scale-110 active:scale-95 ${mood === 'tired' ? 'bg-indigo-100 text-indigo-600 ring-4 ring-indigo-200' : (darkMode ? 'bg-white/10 text-white/50' : 'bg-white text-slate-300 shadow-sm')}`}><Frown className="w-8 h-8" /></button>
+                            ))}
+                            {moodHistory.length === 0 && <div className="text-center opacity-50 py-10">No history yet</div>}
                         </div>
                     </div>
                 </div>
-            </div>
+            )}
 
-            {/* --- Video Modal (保留原有视频弹窗功能) --- */}
+            {/* --- Video Modal (YouTube) --- */}
             {playingVideo && (
-                <div className="absolute inset-0 z-[60] bg-black/80 flex items-center justify-center p-8 animate-in fade-in duration-300">
-                    <div className="bg-white w-full max-w-4xl rounded-3xl overflow-hidden relative shadow-2xl flex flex-col animate-in zoom-in-95">
-                        <div className="bg-slate-900 p-4 flex justify-between items-center text-white shrink-0">
+                <div className="absolute inset-0 z-[60] bg-black/90 backdrop-blur-sm flex items-center justify-center p-8 animate-in fade-in duration-300">
+                    <div className="bg-slate-900 w-full max-w-4xl rounded-3xl overflow-hidden relative shadow-2xl flex flex-col border border-white/10">
+                        <div className="p-4 flex justify-between items-center text-white shrink-0 border-b border-white/10 bg-black/50">
                             <h3 className="font-bold text-xl flex items-center gap-2">
-                                {playingVideo === 'eye' ? <Eye className="w-6 h-6" /> : <Activity className="w-6 h-6" />}
-                                {playingVideo === 'eye' ? "Eye Care Routine" : "Body Stretch Guide"}
+                                {playingVideo === 'eye' ? <Eye className="w-6 h-6 text-blue-400" /> : <Activity className="w-6 h-6 text-orange-400" />}
+                                {youtubeVideos[playingVideo].title}
                             </h3>
                             <button onClick={() => setPlayingVideo(null)} className="p-2 hover:bg-white/20 rounded-full transition-colors"><X className="w-6 h-6" /></button>
                         </div>
                         <div className="aspect-video bg-black flex items-center justify-center relative">
-                            <div className="text-white text-center opacity-50">
-                                <Play className="w-20 h-20 mx-auto mb-4" />
-                                <p className="text-xl font-medium">Video Player Placeholder</p>
-                                <p className="text-sm mt-2">{playingVideo === 'eye' ? "Playing: 5-Min Eye Relaxation" : "Playing: Seated Back Stretch"}</p>
-                            </div>
-                            <div className="absolute bottom-0 left-0 w-full h-1.5 bg-white/20">
-                                <div className={`h-full w-1/3 ${currentTheme.circle.replace('bg-', 'bg-')}`}></div>
-                            </div>
+                            <iframe className="w-full h-full" src={`https://www.youtube.com/embed/${youtubeVideos[playingVideo].id}?autoplay=1&rel=0`} title="YT" frameBorder="0" allow="autoplay; encrypted-media" allowFullScreen></iframe>
                         </div>
-                        <div className="p-6 bg-slate-50 border-t border-slate-200">
-                            <h4 className="font-bold text-slate-800 mb-2">Instructions:</h4>
-                            <p className="text-slate-600 text-sm leading-relaxed">
-                                {playingVideo === 'eye' 
-                                    ? "Follow the dot on the screen with your eyes without moving your head. Blink naturally. If you feel any discomfort, close your eyes and rest."
-                                    : "Sit upright with your feet flat on the floor. Follow the movements slowly. Do not overstretch. Breathe deeply and rhythmically throughout the exercise."}
-                            </p>
+                        <div className="p-6 bg-slate-800 text-white">
+                            <h4 className="font-bold mb-2 text-slate-300">Guide:</h4>
+                            <p className="text-slate-400 text-sm leading-relaxed">{youtubeVideos[playingVideo].desc}</p>
                         </div>
                     </div>
                 </div>
@@ -575,8 +1138,12 @@ const RestModeView = ({ onClose, darkMode }) => {
     );
 };
 
+
+
+
+
 // --- 6. 驾驶主页 (Home Page) ---
-const DriverHomePage = ({ navigateToSchedule, showRestStops, setShowRestStops, onStopClick, activeRoute, darkMode, toggleDarkMode, onToggleMessages, onToggleRestMode, openRouteDetail, nextStopOverride }) => {
+const DriverHomePage = ({ navigateToSchedule, showRestStops, setShowRestStops, onStopClick, activeRoute, darkMode, toggleDarkMode, onToggleMessages, onToggleRestMode, openRouteDetail, nextStopOverride, unreadCount}) => {
   const [time, setTime] = useState(new Date());
   const [capacity, setCapacity] = useState(45);
   const [isStopRequested, setIsStopRequested] = useState(false);
@@ -784,9 +1351,21 @@ const getStopPosition = (index) => {
       return () => clearInterval(interval);
   }, []);
 
+  const [doorsLocked, setDoorsLocked] = useState(true);
+  const [interiorLights, setInteriorLights] = useState(false);
+
+  useEffect(() => {
+      const interval = setInterval(() => {
+          // 模拟物理面板操作：随机切换门和灯的状态
+          if (Math.random() > 0.7) setDoorsLocked(prev => !prev);
+          if (Math.random() > 0.8) setInteriorLights(prev => !prev);
+      }, 4000); // 4秒检查一次变化
+      return () => clearInterval(interval);
+  }, []);
+
   return (
     <div className={`flex flex-col h-full w-full font-sans overflow-hidden select-none relative transition-colors duration-500 ${darkMode ? 'bg-slate-900 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
-      <header className={`h-16 flex items-center justify-between px-6 shadow-sm z-10 shrink-0 transition-colors duration-500 ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-b border-slate-200'}`}>
+      <header className={`h-20 flex items-center justify-between px-6 shadow-sm z-10 shrink-0 transition-colors duration-500 ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-b border-slate-200'}`}>
         <div className="flex items-center space-x-6">
             <button onClick={() => openRouteDetail(null)} className="bg-blue-600 px-3 py-1 rounded text-lg font-bold text-white transition-all active:scale-95">{currentRouteName}</button>
             <div className={`text-sm font-mono transition-all ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>{currentBusNo}</div>
@@ -809,8 +1388,8 @@ const getStopPosition = (index) => {
                 {formatTime(time)}
             </div>
 
-            {/* 3. 动态延误状态条 */}
-            <div className={`flex items-center space-x-3 px-5 py-2 rounded-2xl border transition-colors duration-500 ${darkMode ? 'bg-slate-900 border-slate-600' : 'bg-white border-slate-300'}`}>
+            {/* 3. 动态延误状态条 (已移除 Border) */}
+            <div className={`flex items-center space-x-3 px-5 py-2 rounded-2xl transition-colors duration-500 ${darkMode ? 'bg-slate-900' : 'bg-white'}`}>
                 {/* 状态指示条可视化 */}
                 <div className="flex items-center space-x-1">
                     {/* 早点指示条 (Orange) */}
@@ -839,7 +1418,7 @@ const getStopPosition = (index) => {
         </div>
 
         <div className="flex items-center space-x-4">
-           <button onClick={toggleDarkMode} className={`p-2 rounded-full transition-colors ${darkMode ? 'bg-slate-700 text-yellow-400 hover:bg-slate-600' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>{darkMode ? <Sun className="w-5 h-5"/> : <Moon className="w-5 h-5"/>}</button>
+           <button onClick={toggleDarkMode} className={`p-2 rounded-full transition-colors ${darkMode ? 'bg-slate-700 text-yellow-400 hover:bg-slate-600' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>{darkMode ? <Sun className="w-7 h-7"/> : <Moon className="w-7 h-7"/>}</button>
            <div className="text-right"><div className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Drive Time</div><div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-slate-800'}`}>3h 15m</div></div>
            <div className="w-24 h-2 bg-slate-200 rounded-full overflow-hidden"><div className="h-full bg-orange-500 w-3/4"></div></div>
         </div>
@@ -957,85 +1536,92 @@ const getStopPosition = (index) => {
           </div>
         </main>
 
-    <aside className={`w-1/4 border-l flex flex-col z-20 shadow-xl transition-colors duration-500 p-5 gap-5 ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+<aside className={`w-1/4 border-r flex flex-col z-20 shadow-xl transition-colors duration-500 p-5 gap-5 ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
            
            {/* --- 分区 1: 状态监控 (Status Monitor) --- */}
-           {/* 占比调整为 flex-[1.5]，更紧凑 */}
-           <div className={`flex-[1.5] rounded-3xl p-3 flex flex-col gap-3 border ${darkMode ? 'bg-slate-900/50 border-slate-700' : 'bg-slate-100/80 border-slate-200'}`}>
+           {/* 调整高度适配内容 */}
+           <div className={`flex-[1.2] rounded-3xl p-4 flex flex-col gap-4 border ${darkMode ? 'bg-slate-900/50 border-slate-700' : 'bg-slate-100/80 border-slate-200'}`}>
                <div className={`text-[10px] font-bold uppercase tracking-widest px-1 ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>Vehicle Status</div>
                
-               {/* 1. 载客量 (Capacity) - 整个Block都是进度条 */}
-               <div className={`flex-1 rounded-xl border relative overflow-hidden flex items-center justify-between px-4 z-0 ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
-                   {/* 动态背景条: 宽度随 capacity 变化 */}
-                   <div 
-                       className={`absolute inset-y-0 left-0 transition-all duration-1000 ease-out opacity-20 z-0 ${capacity > 80 ? 'bg-red-500' : 'bg-green-500'}`} 
-                       style={{ width: `${capacity}%` }} // 这里绑定了动态数据
-                   ></div>
-                   
-                   {/* 内容层 */}
-                   <div className="flex items-center gap-3 relative z-10">
-                       <Users className={`w-5 h-5 ${capacity > 80 ? 'text-red-500' : 'text-slate-400'}`} />
-                       <div>
-                           <div className={`text-sm font-bold ${darkMode ? 'text-slate-300' : 'text-slate-600'}`}>Capacity</div>
-                           <div className="text-[10px] opacity-50">APC Active</div>
-                       </div>
+               {/* 1. 载客量 (Capacity) - 保持原样 */}
+               <div className={`h-12 rounded-xl border relative overflow-hidden flex items-center justify-between px-3 z-0 ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+                   <div className={`absolute inset-y-0 left-0 transition-all duration-1000 ease-out opacity-20 z-0 ${capacity > 80 ? 'bg-red-500' : 'bg-green-500'}`} style={{ width: `${capacity}%` }}></div>
+                   <div className="flex items-center gap-2 relative z-10">
+                       <Users className={`w-4 h-4 ${capacity > 80 ? 'text-red-500' : 'text-slate-400'}`} />
+                       <span className={`text-xs font-bold ${darkMode ? 'text-slate-300' : 'text-slate-600'}`}>Capacity</span>
                    </div>
-                   <div className="text-right relative z-10">
-                       <span className={`text-xl font-bold ${capacity > 80 ? 'text-red-500' : (darkMode ? 'text-white' : 'text-slate-800')}`}>{capacity}%</span>
-                   </div>
+                   <span className={`text-lg font-bold relative z-10 ${capacity > 80 ? 'text-red-500' : (darkMode ? 'text-white' : 'text-slate-800')}`}>{capacity}%</span>
                </div>
 
-               {/* 2. 下车请求 (Stop Request) */}
-               <div className={`flex-1 rounded-xl flex items-center justify-between px-4 border transition-colors duration-500
-                   ${isStopRequested 
-                       ? 'bg-red-500/10 border-red-500/50' 
-                       : (darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200')
-                   }`}
-               >
-                   <div className="flex items-center gap-3">
-                       {isStopRequested 
-                           ? <BellRing className="w-5 h-5 text-red-500 animate-[wiggle_1s_ease-in-out_infinite]" /> 
-                           : <Bell className="w-5 h-5 text-slate-400" />
-                       }
-                       <div>
-                           <div className={`text-sm font-bold transition-colors ${isStopRequested ? 'text-red-500' : (darkMode ? 'text-slate-300' : 'text-slate-600')}`}>
-                               {isStopRequested ? 'STOP REQ' : 'No Stop'}
-                           </div>
-                       </div>
+               {/* 2. 三联状态指示 (Status Indicators) - 纯文字，无边框，三列布局 */}
+               <div className="flex-1 grid grid-cols-3 items-center justify-items-center divide-x divide-slate-200/50 dark:divide-slate-700/50">
+                   
+                   {/* Stop Request */}
+                   <div className={`flex flex-col items-center justify-center transition-all duration-300 ${isStopRequested ? 'scale-110' : 'opacity-50'}`}>
+                       <span className={`text-[10px] font-bold uppercase mb-1 tracking-wider ${isStopRequested ? 'text-red-500' : 'text-slate-400'}`}>
+                           Request
+                       </span>
+                       <span className={`text-sm font-black uppercase transition-colors duration-300 ${isStopRequested ? 'text-red-600 animate-pulse' : (darkMode ? 'text-slate-600' : 'text-slate-300')}`}>
+                           {isStopRequested ? 'STOP' : 'NO STOP'}
+                       </span>
                    </div>
-                   <div className={`w-3 h-3 rounded-full ${isStopRequested ? 'bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.8)]' : 'bg-slate-300/30'}`}></div>
+
+                   {/* Door Status */}
+                   <div className="flex flex-col items-center justify-center">
+                       <span className={`text-[10px] font-bold uppercase mb-1 tracking-wider ${!doorsLocked ? 'text-orange-500' : 'text-slate-400 opacity-50'}`}>
+                           Door
+                       </span>
+                       <span className={`text-sm font-black uppercase transition-colors duration-300 ${!doorsLocked ? 'text-orange-500' : (darkMode ? 'text-slate-600' : 'text-slate-300')}`}>
+                           {doorsLocked ? 'CLOSED' : 'OPEN'}
+                       </span>
+                   </div>
+
+                   {/* Light Status */}
+                   <div className="flex flex-col items-center justify-center">
+                       <span className={`text-[10px] font-bold uppercase mb-1 tracking-wider ${interiorLights ? 'text-yellow-500' : 'text-slate-400 opacity-50'}`}>
+                           Light
+                       </span>
+                       <span className={`text-sm font-black uppercase transition-colors duration-300 ${interiorLights ? 'text-yellow-500 drop-shadow-[0_0_8px_rgba(234,179,8,0.5)]' : (darkMode ? 'text-slate-600' : 'text-slate-300')}`}>
+                           {interiorLights ? 'ON' : 'OFF'}
+                       </span>
+                   </div>
+
                </div>
            </div>
 
-           {/* --- 分区 2: 操作控制 (Control Grid) - 2x2 布局 --- */}
-           {/* 占比大 (flex-[4]) */}
+           {/* --- 分区 2: 操作控制 (Control Grid) - 保持不变 --- */}
+{/* --- 分区 2: 操作控制 (Control Grid) --- */}
            <div className="flex-[4] flex flex-col gap-4">
                
-               {/* 第一排：消息 (左) + 休息模式 (右) */}
+               {/* 第一排：消息 + 休息模式 */}
                <div className="flex-1 flex gap-4">
-                   {/* 3. 消息中心 */}
                    <button onClick={onToggleMessages} className={`flex-1 rounded-2xl border-2 flex flex-col items-center justify-center relative transition-all active:scale-[0.98] shadow-sm hover:shadow-md group ${darkMode ? 'bg-slate-700 border-slate-600 hover:bg-slate-600' : 'bg-white border-slate-200 hover:bg-blue-50/50'}`}>
-                        <div className="relative mb-1">
-                            <MessageSquare className="w-8 h-8 text-blue-500 group-hover:scale-110 transition-transform" />
-                            {/* 红点提醒 */}
-                            <div className="absolute -top-1 -right-1 w-3.5 h-3.5">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-red-500 border-2 border-white"></span>
-                            </div>
+                        <div className="relative mb-2"> {/* mb-1 -> mb-2 增加间距 */}
+                            {/* 图标放大：w-6 -> w-10 */}
+                            <MessageSquare className="w-10 h-10 text-blue-500 group-hover:scale-110 transition-transform" />
+                            
+                            {/* 红点位置微调，配合大图标 */}
+                            {unreadCount > 0 && (
+                                <div className="absolute -top-1 -right-1.5 w-3 h-3"> {/* 红点稍微大一点点 */}
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500 border-2 border-white"></span>
+                                </div>
+                            )}
                         </div>
-                        <span className={`text-sm font-bold ${darkMode ? 'text-slate-200' : 'text-slate-700'}`}>Messages</span>
+                        {/* 文字放大：text-xs -> text-base (甚至 text-lg) */}
+                        <span className={`text-base font-bold ${darkMode ? 'text-slate-200' : 'text-slate-700'}`}>Messages</span>
                    </button>
 
-                   {/* 4. 休息模式 (Rest Mode) - 改为淡雅色调 */}
                    <button onClick={onToggleRestMode} className={`flex-1 rounded-2xl border-2 flex flex-col items-center justify-center transition-all active:scale-[0.98] shadow-sm hover:shadow-md group ${darkMode ? 'bg-slate-800 border-slate-600 hover:bg-slate-700' : 'bg-indigo-50 border-indigo-100 hover:bg-indigo-100'}`}>
-                       <Coffee className={`w-8 h-8 mb-1 transition-transform group-hover:rotate-12 ${darkMode ? 'text-indigo-400' : 'text-indigo-500'}`} />
-                       <span className={`text-sm font-bold ${darkMode ? 'text-indigo-300' : 'text-indigo-700'}`}>Rest Mode</span>
+                       {/* 图标放大：w-6 -> w-10 */}
+                       <Coffee className={`w-10 h-10 mb-2 transition-transform group-hover:rotate-12 ${darkMode ? 'text-indigo-400' : 'text-indigo-500'}`} />
+                       {/* 文字放大 */}
+                       <span className={`text-base font-bold ${darkMode ? 'text-indigo-300' : 'text-indigo-700'}`}>Rest Mode</span>
                    </button>
                </div>
 
-               {/* 第二排：呼叫 (左) + SOS (右) */}
+               {/* 第二排：呼叫 + SOS */}
                <div className="flex-1 flex gap-4">
-                   {/* 5. 呼叫调度 */}
                    <button 
                        onClick={handleCallDispatch}
                        disabled={callStatus !== 'idle'}
@@ -1045,13 +1631,13 @@ const getStopPosition = (index) => {
                            : callStatus === 'calling' ? 'bg-blue-100 border-blue-300' : 'bg-green-100 border-green-300'
                        }`}
                    >
-                       <PhoneCall className={`w-7 h-7 mb-1 transition-all ${callStatus === 'calling' ? 'text-blue-600 animate-bounce' : (callStatus === 'connected' ? 'text-green-600' : 'text-blue-500')}`} />
-                       <span className={`text-xs font-bold ${callStatus === 'calling' ? 'text-blue-700' : (callStatus === 'connected' ? 'text-green-700' : (darkMode ? 'text-slate-300' : 'text-slate-600'))}`}>
+                       {/* 图标放大：w-6 -> w-9 (PhoneCall图标本身比较大，w-9视觉上就很大了) */}
+                       <PhoneCall className={`w-9 h-9 mb-2 transition-all ${callStatus === 'calling' ? 'text-blue-600 animate-bounce' : (callStatus === 'connected' ? 'text-green-600' : 'text-blue-500')}`} />
+                       <span className={`text-sm font-bold ${callStatus === 'calling' ? 'text-blue-700' : (callStatus === 'connected' ? 'text-green-700' : (darkMode ? 'text-slate-300' : 'text-slate-600'))}`}>
                            {callStatus === 'idle' ? 'Dispatch' : (callStatus === 'calling' ? 'Calling...' : 'Connected')}
                        </span>
                    </button>
                    
-                   {/* 6. SOS 按钮 */}
                    <button 
                        onClick={handleSOS} 
                        className={`flex-1 rounded-2xl border-2 flex flex-col items-center justify-center transition-all active:scale-[0.95] shadow-sm
@@ -1060,13 +1646,13 @@ const getStopPosition = (index) => {
                            : sosState === 'active' ? 'bg-red-800 border-red-900' : 'bg-red-50 border-red-100 hover:bg-red-100'
                        }`}
                    >
-                       <ShieldAlert className={`w-7 h-7 mb-1 transition-colors ${sosState === 'idle' ? 'text-red-600' : 'text-white'}`} />
-                       <span className={`text-xs font-bold ${sosState === 'idle' ? 'text-red-600' : 'text-white'}`}>
+                       {/* 图标放大：w-6 -> w-9 */}
+                       <ShieldAlert className={`w-9 h-9 mb-2 transition-colors ${sosState === 'idle' ? 'text-red-600' : 'text-white'}`} />
+                       <span className={`text-sm font-bold ${sosState === 'idle' ? 'text-red-600' : 'text-white'}`}>
                            {sosState === 'idle' ? 'SOS' : (sosState === 'confirm' ? 'CONFIRM?' : 'SENT')}
                        </span>
                    </button>
                </div>
-
            </div>
         </aside>
       </div>
@@ -1076,7 +1662,7 @@ const getStopPosition = (index) => {
 };
 
 // --- 7. 排班表页面 ---
-const SchedulePage = ({ darkMode, openRouteDetail }) => {
+const SchedulePage = ({ darkMode, openRouteDetail, onLogout }) => {
     const hours = Array.from({ length: 24 }, (_, i) => i);
     
     // 计算当前星期每一天的日期
@@ -1154,6 +1740,14 @@ const SchedulePage = ({ darkMode, openRouteDetail }) => {
                          <div className="text-xs opacity-50 font-bold uppercase">Total Hours</div>
                          <div className="font-mono font-bold text-blue-500">38.5h</div>
                     </div>
+                    <button 
+                        onClick={onLogout} // 点击触发上面传下来的函数
+                        className={`px-5 rounded-2xl border shadow-sm flex flex-col items-center justify-center transition-all active:scale-95 group ${darkMode ? 'bg-slate-800 border-slate-700 hover:bg-red-900/20 hover:border-red-800/50' : 'bg-white border-slate-200 hover:bg-red-50 hover:border-red-200'}`}
+                        title="Log Out"
+                    >
+                        <LogOut className={`w-6 h-6 mb-1 transition-colors ${darkMode ? 'text-slate-400 group-hover:text-red-400' : 'text-slate-500 group-hover:text-red-500'}`} />
+                        <span className={`text-[10px] font-bold uppercase ${darkMode ? 'text-slate-500 group-hover:text-red-400' : 'text-slate-400 group-hover:text-red-600'}`}>Logout</span>
+                    </button>
                 </div>
             </header>
             <div className={`flex-1 rounded-3xl border shadow-sm p-6 overflow-hidden flex flex-col ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
@@ -1195,84 +1789,22 @@ const SchedulePage = ({ darkMode, openRouteDetail }) => {
     );
 };
 
-const LoginPage = ({ onLoginSuccess }) => {
-    const [loginStep, setLoginStep] = useState('idle'); // idle, processing, welcome
 
-    const handleSwipe = () => {
-        setLoginStep('processing');
-        // 模拟读取卡片数据
-        setTimeout(() => {
-            setLoginStep('welcome');
-            // 显示欢迎动画后进入主页
-            setTimeout(() => {
-                onLoginSuccess();
-            }, 2500);
-        }, 1000);
-    };
 
-    return (
-        <div className="absolute inset-0 z-[100] bg-slate-900 text-white flex flex-col items-center justify-center p-8 overflow-hidden">
-            {/* 背景装饰 */}
-            <div className="absolute inset-0 opacity-20 pointer-events-none">
-                <div className="absolute top-0 left-0 w-96 h-96 bg-blue-500 rounded-full blur-[100px] -translate-x-1/2 -translate-y-1/2"></div>
-                <div className="absolute bottom-0 right-0 w-96 h-96 bg-purple-500 rounded-full blur-[100px] translate-x-1/2 translate-y-1/2"></div>
-            </div>
-
-            {loginStep === 'idle' && (
-                <div className="z-10 flex flex-col items-center animate-in fade-in zoom-in duration-500">
-                    <div className="mb-8 p-6 bg-slate-800 rounded-2xl border border-slate-700 shadow-2xl flex flex-col items-center">
-                        <div className="w-64 h-40 bg-gradient-to-br from-slate-600 to-slate-800 rounded-xl mb-6 relative border-t border-white/10 flex items-center justify-center overflow-hidden">
-                            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-30"></div>
-                            <div className="w-full h-8 bg-black/50 absolute top-4"></div>
-                            <div className="text-xs text-slate-400 absolute bottom-4 left-4">ID CARD</div>
-                        </div>
-                        <h2 className="text-2xl font-bold mb-2">Driver Login</h2>
-                        <p className="text-slate-400 text-sm mb-6 text-center max-w-xs">
-                            Please swipe your Employee ID card on the reader to start your shift.
-                        </p>
-                        
-                        {/* 模拟刷卡动作的按钮 */}
-                        <button 
-                            onClick={handleSwipe}
-                            className="group relative flex items-center gap-3 px-8 py-4 bg-blue-600 hover:bg-blue-500 rounded-full font-bold transition-all active:scale-95 shadow-[0_0_20px_rgba(37,99,235,0.5)]"
-                        >
-                            <div className="w-2 h-8 bg-white/20 rounded-full absolute left-4 group-hover:h-full transition-all duration-300"></div>
-                            <span>Tap here to Swipe Card</span>
-                            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                        </button>
-                    </div>
-                    <div className="text-slate-500 text-xs mt-8">System v2.4.0 | BusOS</div>
-                </div>
-            )}
-
-            {loginStep === 'processing' && (
-                <div className="z-10 flex flex-col items-center">
-                    <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-                    <p className="text-blue-400 font-mono animate-pulse">Authenticating...</p>
-                </div>
-            )}
-
-            {loginStep === 'welcome' && (
-                <div className="z-10 text-center animate-in slide-in-from-bottom-10 fade-in duration-700">
-                    <div className="w-24 h-24 bg-slate-200 rounded-full mx-auto mb-6 flex items-center justify-center border-4 border-white shadow-xl overflow-hidden">
-                        <Users className="w-12 h-12 text-slate-400" /> {/* 这里可以用头像图片 */}
-                    </div>
-                    <h1 className="text-5xl font-bold mb-2">Welcome, Jack</h1>
-                    <p className="text-xl text-slate-400">ID: 9527 • Senior Driver</p>
-                    <div className="mt-8 flex gap-2 justify-center">
-                        <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce" style={{animationDelay: '0s'}}></div>
-                        <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
-                        <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce" style={{animationDelay: '0.4s'}}></div>
-                    </div>
-                </div>
-            )}
-        </div>
-    );
-};
-
-// --- 8. TabButton Component ---
 const TabButton = ({ icon, label, active, onClick, darkMode }) => (
-    <button onClick={onClick} className={`flex-1 flex flex-col items-center justify-center h-full transition-all duration-300 ${active ? 'text-blue-500' : (darkMode ? 'text-slate-500 hover:text-slate-300' : 'text-slate-400 hover:text-slate-600')}`}><div className={`p-1 rounded-xl mb-1 transition-all ${active ? (darkMode ? 'bg-blue-500/20' : 'bg-blue-50') : ''}`}>{React.cloneElement(icon, { className: `w-6 h-6 ${active ? 'stroke-[2.5px]' : 'stroke-2'}` })}</div><span className={`text-[10px] font-bold uppercase tracking-wider ${active ? 'opacity-100' : 'opacity-0 scale-0 h-0'}`}>{label}</span></button>
+    <button 
+        onClick={onClick} 
+        className={`flex-1 flex flex-col items-center justify-center h-full transition-all duration-300 ${active ? 'text-blue-500' : (darkMode ? 'text-slate-500 hover:text-slate-300' : 'text-slate-400 hover:text-slate-600')}`}
+    >
+        {/* 容器内边距增加，图标放大 */}
+        <div className={`p-1 rounded-2xl mb-1 transition-all ${active ? (darkMode ? 'bg-blue-500/20' : 'bg-blue-50') : ''}`}>
+            {React.cloneElement(icon, { className: `w-6 h-6 ${active ? 'stroke-[2.5px]' : 'stroke-2'}` })}
+        </div>
+        {/* 文字字号放大 */}
+        <span className="text-sm font-bold uppercase tracking-wider mt-1">
+            {label}
+        </span>
+    </button>
 );
 
 /* --- 9. 根组件 (Main App Container) --- */
@@ -1296,6 +1828,7 @@ const BusDriverApp = () => {
     { id: 1, sender: "Dispatch Center", time: "18:25", subject: "Traffic Alert: Main St.", content: "Heavy traffic reported on Main St due to road work. Please consider alternate route.", priority: "high", read: false },
     { id: 2, sender: "System Admin", time: "14:00", subject: "Shift Schedule Updated", content: "Your shift for next Tuesday (Nov 24) has been updated. You are now assigned to Route 101.", priority: "normal", read: true }
   ]); 
+  const unreadCount = messages.filter(m => !m.read).length;
 
   const handleTouchStart = (e) => setStartX(e.touches ? e.touches[0].clientX : e.clientX);
   const handleTouchEnd = (e) => {
@@ -1316,6 +1849,12 @@ const BusDriverApp = () => {
   const handleStartDuty = (shift) => { setActiveRoute(shift); setCurrentPage('home'); };
   //TODO:mark read
   const handleMarkRead = (id) => { setMessages(messages.map(m => m.id === id ? {...m, read: true} : m)); };
+
+  const handleLogout = () => {
+    setIsLoggedIn(false); // 关键！设为 false 就会跳回登录页
+    setCurrentPage('home'); // 可选：重置页面为首页，这样下次登录进来就是主页
+    setActiveOverlay(null); // 可选：关闭所有弹窗
+    };
 
   if (!isLoggedIn) {
       return <LoginPage onLoginSuccess={() => setIsLoggedIn(true)} />;
@@ -1345,7 +1884,8 @@ const BusDriverApp = () => {
                 openRouteDetail={(shift) => setDetailModalShift(shift || { route: '4', bus: 'B-9527', day: 'Today', start: '06', end: '15' })} 
                 activeRoute={activeRoute} 
                 toggleDarkMode={() => setDarkMode(!darkMode)} 
-                nextStopOverride={nextStopOverride} />
+                nextStopOverride={nextStopOverride} 
+                unreadCount={unreadCount} />
             </div>
 
             <div className="absolute inset-0 w-full h-full transition-transform duration-500 ease-in-out" 
@@ -1353,12 +1893,12 @@ const BusDriverApp = () => {
                 <SchedulePage 
                 darkMode={darkMode} 
                 openRouteDetail={setDetailModalShift}
-                 />
+                onLogout={handleLogout} />
             </div>
               
             <div className={`absolute inset-0 z-40 transition-transform duration-300 ease-out ${activeOverlay === 'messages' ? 'translate-x-0' : 'translate-x-full'}`}>
                 {activeOverlay === 'messages' && <MessageCenterPage onClose={() => setActiveOverlay(null)} 
-                darkMode={darkMode} messages={messages} onMarkRead={handleMarkRead} />}
+                darkMode={darkMode} messages={messages} onMarkRead={handleMarkRead} unreadCount={unreadCount}/>}
             </div>
 
             <div className={`absolute inset-0 z-50 transition-transform duration-300 ease-out ${activeOverlay === 'rest' ? 'translate-x-0' : 'translate-x-full'}`}>
@@ -1376,11 +1916,19 @@ const BusDriverApp = () => {
         </div>
 
         {/* bottom navigation */}
-        <div className={`h-20 flex justify-around items-center shrink-0 shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.1)] z-[60] relative ${darkMode ? 'bg-slate-800 border-t border-slate-700' : 'bg-white border-t border-slate-200'}`}>
-            <TabButton icon={<Car />} label="Vehicle" active={currentPage === 'vehicle'} onClick={() => setCurrentPage('vehicle')} darkMode={darkMode} />
+        <div className={`h-28 flex justify-around items-center shrink-0 shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.1)] z-[60] relative ${darkMode ? 'bg-slate-800 border-t border-slate-700' : 'bg-white border-t border-slate-200'}`}>
+            <TabButton 
+                icon={<Leaf />} 
+                label="Comfort" 
+                active={currentPage === 'vehicle'} 
+                onClick={() => setCurrentPage('vehicle')} 
+                darkMode={darkMode} 
+            />
             <TabButton icon={<Home />} label="Drive" active={currentPage === 'home'} onClick={() => setCurrentPage('home')} darkMode={darkMode} />
             <TabButton icon={<Calendar />} label="Schedule" active={currentPage === 'schedule'} onClick={() => setCurrentPage('schedule')} darkMode={darkMode} />
         </div>
+
+
     </div>
   );
 };
