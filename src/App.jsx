@@ -204,13 +204,9 @@ const RouteDetailModal = ({ shift, onClose, onStartNavigation }) => {
     const routeTimeline = generateTimeline(baseStops, parseInt(shift.start), 15);
 
     const fullTimeline = [
-        { time: `${shift.start}:00`, type: 'depot', location: "Central Depot", icon: <Warehouse className="w-4 h-4"/> },
-        { time: `${shift.start}:15`, type: 'deadhead', location: `Depot -> ${routeTimeline[0].name}`, icon: <ArrowRight className="w-4 h-4"/> },
-        { time: routeTimeline[0].time, type: 'start', location: `Start Route ${shift.route}`, icon: <Bus className="w-4 h-4"/> },
-        ...routeTimeline.slice(1, 3).map(s => ({ time: s.time, location: s.name, icon: <MapIcon className="w-4 h-4"/> })),
-        { time: "...", location: "...", type: 'skip', icon: <ArrowRight className="w-4 h-4"/> }, 
+        { time: routeTimeline[0].time, type: 'depot', location: `Depot: ${routeTimeline[0].name}`, icon: <Warehouse className="w-4 h-4"/> },
+        ...routeTimeline.slice(1, -1).map(s => ({ time: s.time, location: s.name, icon: <MapIcon className="w-4 h-4"/> })),
         { time: routeTimeline[routeTimeline.length-1].time, type: 'end', location: `End: ${routeTimeline[routeTimeline.length-1].name}`, icon: <Flag className="w-4 h-4"/> },
-        { time: `${shift.end}:00`, type: 'depot', location: "Return to Depot", icon: <CheckCircle className="w-4 h-4"/> },
     ];
 
     const navigationData = {
@@ -231,7 +227,7 @@ const RouteDetailModal = ({ shift, onClose, onStartNavigation }) => {
                     </button>
 
                     <div className="relative z-10 pr-12">
-                        <div className="flex items-center space-x-2 text-blue-100 mb-2 font-bold text-sm uppercase tracking-wider"><Calendar className="w-4 h-4" /> <span>{shift.day}, Nov 24</span></div>
+                        <div className="flex items-center space-x-2 text-blue-100 mb-2 font-bold text-sm uppercase tracking-wider"><Calendar className="w-4 h-4" /> <span>{shift.day}, {shift.date || 'N/A'}</span></div>
                         <h2 className="text-4xl font-bold mb-1">Bus {shift.route}</h2>
                         <p className="text-xl text-blue-100">{shift.route === '4' ? "Gullmarsplan ➔ Radiohuset" : "Ropsten ➔ Karolinska"}</p>
                         <p className="text-sm mt-1 opacity-80">Shift: {shift.start}:00 - {shift.end}:00</p>
@@ -484,6 +480,7 @@ const DriverHomePage = ({ navigateToSchedule, showRestStops, setShowRestStops, o
   const [isSimulating, setIsSimulating] = useState(false);
   const [currentStopIndex, setCurrentStopIndex] = useState(0);
   const timelineRef = useRef(null);
+  const [isApproaching, setIsApproaching] = useState(false);
   
   // 使用真实路由或默认路由
   let rawStops = activeRoute ? activeRoute.timeline : generateTimeline(route4Stops, 18, 0);
@@ -494,11 +491,48 @@ const DriverHomePage = ({ navigateToSchedule, showRestStops, setShowRestStops, o
       else if (index === currentStopIndex) status = 'current';
       return { ...item, status };
   });
+// --- 修改：调整坐标计算 (整体向左平移) ---
+const getStopPosition = (index) => {
+    // 起始站：原 left: 55 -> 改为 35
+    if (index === 0) return { top: 35, left: 35 };
+    
+    // 第4站(弯道)：原 left: 75 -> 改为 55
+    if (index === 3) return { top: 15, left: 55 };
+    
+    // 其他站点：原 50 + index*5 -> 改为 30 + index*5
+    // 这样随着 index 增加，站点也不会太快跑出屏幕右侧
+    return { top: 40 + index * 5, left: 30 + index * 5 };
+};
 
   const currentRouteName = activeRoute ? `Bus ${activeRoute.route}` : "Bus 4";
   const currentBusNo = activeRoute ? `Vehicle: ${activeRoute.bus}` : "Vehicle: B-9527";
   const nextStop = displayedStops.slice(currentStopIndex + 1).find(s => s.type !== 'deadhead') || displayedStops[currentStopIndex + 1];
   const activeNextStop = nextStopOverride || nextStop;
+
+  useEffect(() => {
+    let interval;
+    if (isSimulating) {
+        // 缩短时间间隔，让状态切换更流畅
+        interval = setInterval(() => {
+            if (!isApproaching) {
+                // 阶段 1：先进入“接近模式” (Zoom In)
+                setIsApproaching(true);
+            } else {
+                // 阶段 2：到达站点，切下一站，并重置缩放 (Zoom Out)
+                setCurrentStopIndex(prev => {
+                    if (prev >= rawStops.length - 1) { 
+                        setIsSimulating(false); 
+                        setIsApproaching(false);
+                        return 0; 
+                    }
+                    return prev + 1;
+                });
+                setIsApproaching(false); // 到站后恢复全景
+            }
+        }, 2500); // 每 2.5秒切换一次状态
+    }
+    return () => clearInterval(interval);
+    }, [isSimulating, isApproaching, rawStops.length]);
 
   useEffect(() => {
       let interval;
@@ -531,6 +565,22 @@ const DriverHomePage = ({ navigateToSchedule, showRestStops, setShowRestStops, o
   const formatTime = (d) => d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   const handleSOS = () => { alert("Emergency Signal Sent!"); setIsEmergencyActive(true); };
   const handleEmergency = () => { setIsEmergencyActive(true); setTimeout(() => setIsEmergencyActive(false), 3000); };
+
+  const nextStopPos = getStopPosition(currentStopIndex + 1);
+
+// 4. 定义动态样式
+const mapContainerStyle = {
+    // 如果正在接近，放大 1.6 倍，否则保持原状
+    transform: isApproaching ? 'scale(1.6)' : 'scale(1)',
+    // 关键：将缩放的中心点设置为“下一站”的坐标，实现“聚焦”效果
+    transformOrigin: isApproaching ? `${nextStopPos.left}% ${nextStopPos.top}%` : 'center center',
+    transition: 'transform 1.5s cubic-bezier(0.4, 0, 0.2, 1)', // 平滑过渡动画
+    width: '100%',
+    height: '100%',
+    position: 'absolute',
+    top: 0,
+    left: 0
+};
 
   const delayMinutes = 2; 
   const getDelayColor = (min) => { if (min < -5) return 'text-orange-500'; if (min <= 0) return 'text-green-500'; if (min < 5) return 'text-yellow-500'; return 'text-red-500'; };
@@ -598,15 +648,75 @@ const DriverHomePage = ({ navigateToSchedule, showRestStops, setShowRestStops, o
         </aside>
 
         <main className={`flex-1 relative flex flex-col items-center justify-center overflow-hidden transition-colors duration-500 ${darkMode ? 'bg-slate-900' : 'bg-slate-100'}`}>
-          <div className="absolute inset-0 opacity-40 pointer-events-none"><div className="w-full h-full" style={{backgroundImage: `linear-gradient(${darkMode ? '#475569' : '#94a3b8'} 1px, transparent 1px), linear-gradient(90deg, ${darkMode ? '#475569' : '#94a3b8'} 1px, transparent 1px)`, backgroundSize: '40px 40px', transform: 'perspective(500px) rotateX(20deg) scale(1.5)', transformOrigin: 'bottom'}}></div><svg className="absolute inset-0 w-full h-full" style={{transform: 'perspective(500px) rotateX(20deg) scale(1.5)', transformOrigin: 'bottom'}}><path d="M 300 800 C 320 760, 340 720, 360 680" fill="none" stroke="#22c55e" strokeWidth="20" strokeLinecap="round" /><path d="M 360 680 C 380 640, 400 600, 420 560" fill="none" stroke="#ef4444" strokeWidth="20" strokeLinecap="round" /><path d="M 420 560 C 450 500, 500 400, 500 200 S 800 50, 900 0" fill="none" stroke={darkMode ? "#1e293b" : "#3b82f6"} strokeWidth="20" strokeLinecap="round" /></svg></div>
-          {displayedStops.map((stop, index) => {
-              const pos = index === 0 ? { top: '35%', left: '55%' } : index === 3 ? { top: '15%', left: '75%' } : { top: `${40 + index * 5}%`, left: `${50 + index * 5}%` };
-              if (stop.type === 'rest_stop') {
-                  if (!showRestStops) return null;
-                  return (<div key={stop.id} className="absolute z-30 flex flex-col items-center cursor-pointer group hover:scale-110 transition-transform" style={{ top: pos.top, left: pos.left }} onClick={() => onStopClick(stop)}><div className="bg-white px-3 py-1.5 rounded-lg shadow-lg mb-2 flex items-center space-x-2 border border-orange-200"><span className="font-bold text-xs text-slate-800 whitespace-nowrap">{stop.name}</span></div><div className="relative"><MapPin className="w-10 h-10 text-orange-500 fill-current drop-shadow-lg relative z-10" /><div className="absolute top-2 left-1/2 -translate-x-1/2 text-white font-bold text-[10px] z-20"><Coffee className="w-3 h-3"/></div></div></div>);
-              } else { return (<div key={stop.id} className={`absolute z-30 flex flex-col items-center transition-all duration-300`} style={{ top: pos.top, left: pos.left }}><div className={`flex items-center justify-center rounded-full shadow-lg border-2 ${stop.status === 'current' ? 'w-10 h-10 bg-blue-600 border-white text-white ring-4 ring-blue-500/30' : 'w-8 h-8 bg-white border-blue-600 text-blue-600'}`}>{stop.status === 'current' ? <Bus className="w-5 h-5" /> : <span className="text-xs font-bold">{index + 1}</span>}</div><div className={`mt-1.5 px-2 py-1 rounded-md text-xs font-bold shadow-sm whitespace-nowrap bg-white/90 text-slate-800`}>{stop.name}</div></div>); }
-          })}
-          <div className="absolute top-6 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur border border-slate-300 px-6 py-3 rounded-2xl shadow-xl flex items-center space-x-4 pointer-events-none z-20"><Navigation className="w-8 h-8 text-blue-600" /><div><div className="text-slate-500 text-xs font-bold uppercase">1.2 km Straight</div><div className="text-2xl font-bold text-slate-900">Next: {activeNextStop?.name || "Destination"}</div></div></div>
+          
+          {/* --- 缩放容器：包裹地图背景和站点图标 --- */}
+          <div style={mapContainerStyle}>
+              {/* 背景网格 */}
+              <div className="absolute inset-0 opacity-40 pointer-events-none">
+                  <div className="w-full h-full" style={{backgroundImage: `linear-gradient(${darkMode ? '#475569' : '#94a3b8'} 1px, transparent 1px), linear-gradient(90deg, ${darkMode ? '#475569' : '#94a3b8'} 1px, transparent 1px)`, backgroundSize: '40px 40px', transform: 'perspective(500px) rotateX(20deg) scale(1.5)', transformOrigin: 'bottom'}}></div>
+                  <svg className="absolute inset-0 w-full h-full" style={{transform: 'perspective(500px) rotateX(20deg) scale(1.5)', transformOrigin: 'bottom'}}>
+                      <path d="M 300 800 C 320 760, 340 720, 360 680" fill="none" stroke="#22c55e" strokeWidth="20" strokeLinecap="round" />
+                      <path d="M 360 680 C 380 640, 400 600, 420 560" fill="none" stroke="#ef4444" strokeWidth="20" strokeLinecap="round" />
+                      <path d="M 420 560 C 450 500, 500 400, 500 200 S 800 50, 900 0" fill="none" stroke={darkMode ? "#1e293b" : "#3b82f6"} strokeWidth="20" strokeLinecap="round" />
+                  </svg>
+              </div>
+
+              {/* 站点渲染循环 */}
+              {displayedStops.map((stop, index) => {
+                  const pos = getStopPosition(index); // 使用新的辅助函数
+                  // 这里的样式要加上 % 单位
+                  const posStyle = { top: `${pos.top}%`, left: `${pos.left}%` };
+                  
+                  // 判断是否为下一站且正在接近 (用于显示高亮光环)
+                  const isNextAndApproaching = index === currentStopIndex + 1 && isApproaching;
+
+                  if (stop.type === 'rest_stop') {
+                      if (!showRestStops) return null;
+                      return (
+                          <div key={stop.id} className="absolute z-30 flex flex-col items-center cursor-pointer group hover:scale-110 transition-transform" style={posStyle} onClick={() => onStopClick(stop)}>
+                              <div className="bg-white px-3 py-1.5 rounded-lg shadow-lg mb-2 flex items-center space-x-2 border border-orange-200">
+                                  <span className="font-bold text-xs text-slate-800 whitespace-nowrap">{stop.name}</span>
+                              </div>
+                              <div className="relative">
+                                  <MapPin className="w-10 h-10 text-orange-500 fill-current drop-shadow-lg relative z-10" />
+                                  <div className="absolute top-2 left-1/2 -translate-x-1/2 text-white font-bold text-[10px] z-20">
+                                      <Coffee className="w-3 h-3"/>
+                                  </div>
+                              </div>
+                          </div>
+                      );
+                  } else { 
+                      return (
+                          <div key={stop.id} className={`absolute z-30 flex flex-col items-center transition-all duration-300`} style={posStyle}>
+                              {/* 圆点图标：增加了 isNextAndApproaching 的高亮样式逻辑 */}
+                              <div className={`flex items-center justify-center rounded-full shadow-lg border-2 transition-all duration-500 
+                                  ${stop.status === 'current' ? 'w-10 h-10 bg-blue-600 border-white text-white ring-4 ring-blue-500/30' : 'w-8 h-8 bg-white border-blue-600 text-blue-600'}
+                                  ${isNextAndApproaching ? 'scale-125 ring-4 ring-green-400 shadow-[0_0_20px_rgba(74,222,128,0.6)]' : ''}
+                              `}>
+                                  {stop.status === 'current' ? <Bus className="w-5 h-5" /> : <span className="text-xs font-bold">{index + 1}</span>}
+                              </div>
+                              <div className={`mt-1.5 px-2 py-1 rounded-md text-xs font-bold shadow-sm whitespace-nowrap bg-white/90 text-slate-800`}>
+                                  {stop.name}
+                              </div>
+                          </div>
+                      ); 
+                  }
+              })}
+          </div>
+
+          {/* --- 顶部导航指示条 (不随地图缩放，固定在上方) --- */}
+          <div className="absolute top-6 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur border border-slate-300 px-6 py-3 rounded-2xl shadow-xl flex items-center space-x-4 pointer-events-none z-20">
+              <Navigation className={`w-8 h-8 ${isApproaching ? 'text-green-500 animate-pulse' : 'text-blue-600'}`} />
+              <div>
+                  {/* 动态显示的距离提示文字 */}
+                  <div className={`text-xs font-bold uppercase transition-colors duration-300 ${isApproaching ? 'text-green-600' : 'text-slate-500'}`}>
+                      {isApproaching ? 'Approaching Stop (200m)' : '1.2 km Straight'}
+                  </div>
+                  <div className="text-2xl font-bold text-slate-900">
+                      Next: {activeNextStop?.name || "Destination"}
+                  </div>
+              </div>
+          </div>
         </main>
 
         <aside className={`w-1/4 border-l p-4 flex flex-col space-y-4 shadow-xl z-20 transition-colors duration-500 ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
@@ -623,23 +733,98 @@ const DriverHomePage = ({ navigateToSchedule, showRestStops, setShowRestStops, o
 };
 
 // --- 7. 排班表页面 ---
-const SchedulePage = ({ navigateBack, onStartDuty, darkMode, openRouteDetail }) => {
+const SchedulePage = ({ darkMode, openRouteDetail }) => {
     const hours = Array.from({ length: 24 }, (_, i) => i);
-    const scheduleData = [{ day: 'Mon', shifts: [{ start: 7, end: 15, route: '4', bus: 'B-9527', type: 'work' }] }, { day: 'Tue', shifts: [{ start: 14, end: 22, route: '6', bus: 'B-8821', type: 'work' }] }, { day: 'Wed', shifts: [{ start: 0, end: 24, type: 'rest' }] }, { day: 'Thu', shifts: [{ start: 7, end: 15, route: '4', bus: 'B-9527', type: 'work' }] }, { day: 'Fri', shifts: [{ start: 7, end: 12, route: '4', bus: 'B-9527', type: 'work' }, { start: 18, end: 22, route: '4', bus: 'B-9999', type: 'work' }] }, { day: 'Sat', shifts: [{ start: 9, end: 17, route: '6', bus: 'T-101', type: 'work' }] }, { day: 'Sun', shifts: [{ start: 0, end: 24, type: 'rest' }] }];
+    
+    // 计算当前星期每一天的日期
+    const getCurrentWeekDates = () => {
+        const now = new Date();
+        const day = now.getDay(); // 0 = 周日, 1 = 周一, ..., 6 = 周六
+        const diff = now.getDate() - day + (day === 0 ? -6 : 1); // 调整到周一
+        const monday = new Date(now.setDate(diff));
+        const weekDates = [];
+        for (let i = 0; i < 7; i++) {
+            const date = new Date(monday);
+            date.setDate(monday.getDate() + i);
+            weekDates.push(date);
+        }
+        return weekDates;
+    };
+
+    const weekDates = getCurrentWeekDates();
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    
+    const baseScheduleData = [
+        { day: 'Mon', shifts: [{ start: 7, end: 15, route: '4', bus: 'B-9527', type: 'work' }] }, 
+        { day: 'Tue', shifts: [{ start: 14, end: 22, route: '6', bus: 'B-8821', type: 'work' }] }, 
+        { day: 'Wed', shifts: [{ start: 0, end: 24, type: 'rest' }] }, 
+        { day: 'Thu', shifts: [{ start: 7, end: 15, route: '4', bus: 'B-9527', type: 'work' }] }, 
+        { day: 'Fri', shifts: [{ start: 7, end: 12, route: '4', bus: 'B-9527', type: 'work' }, { start: 18, end: 22, route: '4', bus: 'B-9999', type: 'work' }] }, 
+        { day: 'Sat', shifts: [{ start: 9, end: 17, route: '6', bus: 'T-101', type: 'work' }] }, 
+        { day: 'Sun', shifts: [{ start: 0, end: 24, type: 'rest' }] }];
+    
+    // 为每个 shift 添加日期属性
+    const scheduleData = baseScheduleData.map((dayData, index) => {
+        const date = weekDates[index];
+        const formattedDate = `${monthNames[date.getMonth()]} ${date.getDate()}`;
+        return {
+            ...dayData,
+            shifts: dayData.shifts.map(shift => ({
+                ...shift,
+                day: dayData.day,
+                date: formattedDate,
+                dateObj: date
+            }))
+        };
+    });
+
+    // 计算当前星期的日期范围（周一到周日）
+    const getCurrentWeekRange = () => {
+        const monday = weekDates[0];
+        const sunday = weekDates[6];
+        const formatDate = (date) => `${monthNames[date.getMonth()]} ${date.getDate()}`;
+        return `${formatDate(monday)} - ${formatDate(sunday)}`;
+    };
 
     return (
         <div className={`flex flex-col h-full w-full font-sans p-8 overflow-hidden relative ${darkMode ? 'bg-slate-900 text-white' : 'bg-slate-50 text-slate-900'}`}>
             <header className="flex items-center justify-between mb-8">
-                <div className="flex items-center space-x-4">
-                    <button onClick={navigateBack} className={`p-2 border rounded-full shadow-sm ${darkMode ? 'bg-slate-800 border-slate-600 hover:bg-slate-700' : 'bg-white border-slate-300 hover:bg-slate-100'}`}><ChevronLeft className="w-8 h-8" /></button>
-                    <div><h1 className="text-3xl font-bold">Weekly Schedule</h1><p className="opacity-50">Nov 17 - Nov 23</p></div>
-                </div>
+                <div><h1 className="text-3xl font-bold">Weekly Schedule</h1><p className="opacity-50">{getCurrentWeekRange()}</p></div>
             </header>
             <div className={`flex-1 rounded-3xl border shadow-sm p-6 overflow-hidden flex flex-col ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
                 <div className="flex mb-2 pl-16">{hours.map(h => (<div key={h} className="flex-1 text-center text-xs opacity-40 border-l h-4">{h % 2 === 0 ? h : ''}</div>))}</div>
                 <div className="flex-1 flex flex-col justify-between relative">
                    <div className="absolute inset-0 flex pl-16 pointer-events-none">{hours.map(h => (<div key={h} className={`flex-1 border-l ${darkMode ? 'border-slate-700' : 'border-slate-100'}`}></div>))}</div>
-                   {scheduleData.map((dayData, index) => (<div key={index} className="flex items-center relative h-12 z-10 group"><div className="w-16 font-bold text-lg shrink-0">{dayData.day}</div><div className={`flex-1 h-10 rounded-lg relative overflow-hidden flex items-center ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>{dayData.shifts.map((shift, sIndex) => {const startPercent = (shift.start / 24) * 100;const durationPercent = ((shift.end - shift.start) / 24) * 100;return shift.type === 'work' ? (<div key={sIndex} onClick={() => openRouteDetail(shift)} className="absolute h-full top-0 bg-blue-500/90 hover:bg-blue-600 cursor-pointer rounded-md border-2 border-white/20 shadow-sm flex items-center justify-center text-white text-xs font-bold transition-all hover:scale-105 z-20" style={{ left: `${startPercent}%`, width: `${durationPercent}%` }}><span className="truncate px-1">Bus {shift.route}</span></div>) : (<div key={sIndex} className="absolute h-full top-0 bg-green-500/20 border-2 border-white/10 flex items-center justify-center" style={{ left: '0%', width: '100%' }}><span className="text-green-500 text-xs font-bold tracking-widest uppercase">Rest Day</span></div>);})}</div></div>))}
+                   {scheduleData.map((dayData, index) => (<div key={index} className="flex items-center relative h-12 z-10 group">
+                    <div className="w-16 font-bold text-lg shrink-0">{dayData.day}</div>
+
+                    <div className={`flex-1 h-10 rounded-lg relative overflow-hidden flex items-center ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
+                        {dayData.shifts.map((shift, sIndex) => {
+                            const startPercent = (shift.start / 24) * 100;
+                            const durationPercent = ((shift.end - shift.start) / 24) * 100;
+                            
+                            return shift.type === 'work' ? (
+                                <div 
+                                    key={sIndex} 
+                                    onClick={() => openRouteDetail(shift)} 
+                                    className="absolute h-full top-0 bg-blue-500/90 hover:bg-blue-600 cursor-pointer rounded-md border-2 border-white/20 shadow-sm flex items-center justify-center text-white text-xs font-bold transition-all hover:scale-105 z-20" 
+                                    style={{ left: `${startPercent}%`, width: `${durationPercent}%` }}
+                                >
+                                    <span className="truncate px-1">Bus {shift.route}</span>
+                                </div>
+                            ) : (
+                                <div 
+                                    key={sIndex} 
+                                    className="absolute h-full top-0 bg-green-500/20 border-2 border-white/10 flex items-center justify-center" 
+                                    style={{ left: '0%', width: '100%' }}
+                                >
+                                    <span className="text-green-500 text-xs font-bold tracking-widest uppercase">Rest Day</span>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>))}
                 </div>
             </div>
         </div>
@@ -653,17 +838,24 @@ const TabButton = ({ icon, label, active, onClick, darkMode }) => (
 
 /* --- 9. 根组件 (Main App Container) --- */
 const BusDriverApp = () => {
-  const [currentPage, setCurrentPage] = useState('home'); 
+  //Page variables
+  const [currentPage, setCurrentPage] = useState('home'); // current page
+  const [activeOverlay, setActiveOverlay] = useState(null); // active overlay
   const [startX, setStartX] = useState(null);
-  const [showRestStops, setShowRestStops] = useState(true);
-  const [selectedStopDetail, setSelectedStopDetail] = useState(null);
-  const [activeOverlay, setActiveOverlay] = useState(null); 
-  const [activeRoute, setActiveRoute] = useState(null);
-  const [darkMode, setDarkMode] = useState(false);
-  const [detailModalShift, setDetailModalShift] = useState(null); 
-  const [nextStopOverride, setNextStopOverride] = useState(null); 
-  
-  const [messages, setMessages] = useState([{ id: 1, sender: "Dispatch Center", time: "18:25", subject: "Traffic Alert: Main St.", content: "Heavy traffic reported on Main St due to road work. Please consider alternate route.", priority: "high", read: false }, { id: 2, sender: "System Admin", time: "14:00", subject: "Shift Schedule Updated", content: "Your shift for next Tuesday (Nov 24) has been updated. You are now assigned to Route 101.", priority: "normal", read: true }]);
+  const [darkMode, setDarkMode] = useState(false); // dark mode
+
+  //Status variables
+  const [showRestStops, setShowRestStops] = useState(true); // show/hide rest stops
+
+  //Modal variables
+  const [selectedStopDetail, setSelectedStopDetail] = useState(null); // selected stop detail
+  const [activeRoute, setActiveRoute] = useState(null); // active route
+  const [detailModalShift, setDetailModalShift] = useState(null); // detail modal shift
+  const [nextStopOverride, setNextStopOverride] = useState(null); // next stop override
+  const [messages, setMessages] = useState([
+    { id: 1, sender: "Dispatch Center", time: "18:25", subject: "Traffic Alert: Main St.", content: "Heavy traffic reported on Main St due to road work. Please consider alternate route.", priority: "high", read: false },
+    { id: 2, sender: "System Admin", time: "14:00", subject: "Shift Schedule Updated", content: "Your shift for next Tuesday (Nov 24) has been updated. You are now assigned to Route 101.", priority: "normal", read: true }
+  ]); 
 
   const handleTouchStart = (e) => setStartX(e.touches ? e.touches[0].clientX : e.clientX);
   const handleTouchEnd = (e) => {
@@ -680,23 +872,65 @@ const BusDriverApp = () => {
   };
 
   const handleStopClick = (stop) => { if (stop.type === 'rest_stop') setSelectedStopDetail(stop); };
+  //TODO:shift 
   const handleStartDuty = (shift) => { setActiveRoute(shift); setCurrentPage('home'); };
+  //TODO:mark read
   const handleMarkRead = (id) => { setMessages(messages.map(m => m.id === id ? {...m, read: true} : m)); };
 
   return (
     <div className={`w-full h-screen overflow-hidden flex flex-col relative ${darkMode ? 'bg-slate-900' : 'bg-black'}`}>
-        <div className="relative flex-1 w-full overflow-hidden" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} onMouseDown={handleTouchStart} onMouseUp={handleTouchEnd}>
-              <div className="absolute inset-0 w-full h-full transition-transform duration-500 ease-in-out" style={{ transform: currentPage === 'vehicle' ? 'translateX(0)' : 'translateX(-100%)' }}><VehicleStatusPage darkMode={darkMode} /></div>
-              <div className="absolute inset-0 w-full h-full transition-transform duration-500 ease-in-out" style={{ transform: currentPage === 'home' ? 'translateX(0)' : currentPage === 'schedule' ? 'translateX(-100%)' : 'translateX(100%)' }}>
-                 <DriverHomePage navigateToSchedule={() => setCurrentPage('schedule')} showRestStops={showRestStops} setShowRestStops={setShowRestStops} onStopClick={handleStopClick} onToggleMessages={() => setActiveOverlay('messages')} onToggleRestMode={() => setActiveOverlay('rest')} openRouteDetail={(shift) => setDetailModalShift(shift || { route: '4', bus: 'B-9527', day: 'Today', start: '06', end: '15' })} activeRoute={activeRoute} darkMode={darkMode} toggleDarkMode={() => setDarkMode(!darkMode)} nextStopOverride={nextStopOverride} />
-              </div>
-              <div className="absolute inset-0 w-full h-full transition-transform duration-500 ease-in-out" style={{ transform: currentPage === 'schedule' ? 'translateX(0)' : 'translateX(100%)' }}><SchedulePage navigateBack={() => setCurrentPage('home')} onStartDuty={handleStartDuty} darkMode={darkMode} openRouteDetail={setDetailModalShift} /></div>
+        {/* main content */}
+        <div className="relative flex-1 w-full overflow-hidden" 
+        onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} onMouseDown={handleTouchStart} onMouseUp={handleTouchEnd}> 
+            <div className="absolute inset-0 w-full h-full transition-transform duration-500 ease-in-out" 
+            style={{ transform: currentPage === 'vehicle' ? 'translateX(0)' : 'translateX(-100%)' }}>
+                <VehicleStatusPage 
+                darkMode={darkMode} />
+            </div>
+
+            <div className="absolute inset-0 w-full h-full transition-transform duration-500 ease-in-out" 
+            style={{ transform: currentPage === 'home' ? 'translateX(0)' : currentPage === 'schedule' ? 'translateX(-100%)' : 'translateX(100%)' }}>
+                <DriverHomePage 
+                darkMode={darkMode} 
+                showRestStops={showRestStops} 
+                setShowRestStops={setShowRestStops} 
+                onStopClick={handleStopClick} 
+                navigateToSchedule={() => setCurrentPage('schedule')}
+                onToggleMessages={() => setActiveOverlay('messages')} 
+                onToggleRestMode={() => setActiveOverlay('rest')} 
+                openRouteDetail={(shift) => setDetailModalShift(shift || { route: '4', bus: 'B-9527', day: 'Today', start: '06', end: '15' })} 
+                activeRoute={activeRoute} 
+                toggleDarkMode={() => setDarkMode(!darkMode)} 
+                nextStopOverride={nextStopOverride} />
+            </div>
+
+            <div className="absolute inset-0 w-full h-full transition-transform duration-500 ease-in-out" 
+            style={{ transform: currentPage === 'schedule' ? 'translateX(0)' : 'translateX(100%)' }}>
+                <SchedulePage 
+                darkMode={darkMode} 
+                openRouteDetail={setDetailModalShift} />
+            </div>
               
-              <div className={`absolute inset-0 z-40 transition-transform duration-300 ease-out ${activeOverlay === 'messages' ? 'translate-x-0' : 'translate-x-full'}`}>{activeOverlay === 'messages' && <MessageCenterPage onClose={() => setActiveOverlay(null)} darkMode={darkMode} messages={messages} onMarkRead={handleMarkRead} />}</div>
-              <div className={`absolute inset-0 z-50 transition-transform duration-300 ease-out ${activeOverlay === 'rest' ? 'translate-x-0' : 'translate-x-full'}`}>{activeOverlay === 'rest' && <RestModeView onClose={() => setActiveOverlay(null)} darkMode={darkMode} />}</div>
-              <StopDetailModal stop={selectedStopDetail} onClose={() => setSelectedStopDetail(null)} onNavigate={(stop) => setNextStopOverride(stop)} />
-              <RouteDetailModal shift={detailModalShift} onClose={() => setDetailModalShift(null)} onStartNavigation={(s) => { handleStartDuty(s); setDetailModalShift(null); }} />
+            <div className={`absolute inset-0 z-40 transition-transform duration-300 ease-out ${activeOverlay === 'messages' ? 'translate-x-0' : 'translate-x-full'}`}>
+                {activeOverlay === 'messages' && <MessageCenterPage onClose={() => setActiveOverlay(null)} 
+                darkMode={darkMode} messages={messages} onMarkRead={handleMarkRead} />}
+            </div>
+
+            <div className={`absolute inset-0 z-50 transition-transform duration-300 ease-out ${activeOverlay === 'rest' ? 'translate-x-0' : 'translate-x-full'}`}>
+                {activeOverlay === 'rest' && <RestModeView onClose={() => setActiveOverlay(null)} darkMode={darkMode} />}
+            </div>
+
+            <StopDetailModal stop={selectedStopDetail} 
+            onClose={() => setSelectedStopDetail(null)} 
+            onNavigate={(stop) => setNextStopOverride(stop)} />
+
+            <RouteDetailModal shift={detailModalShift} 
+            onClose={() => setDetailModalShift(null)} 
+            onStartNavigation={(s) => { handleStartDuty(s); setDetailModalShift(null); }} />
+
         </div>
+
+        {/* bottom navigation */}
         <div className={`h-20 flex justify-around items-center shrink-0 shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.1)] z-[60] relative ${darkMode ? 'bg-slate-800 border-t border-slate-700' : 'bg-white border-t border-slate-200'}`}>
             <TabButton icon={<Car />} label="Vehicle" active={currentPage === 'vehicle'} onClick={() => setCurrentPage('vehicle')} darkMode={darkMode} />
             <TabButton icon={<Home />} label="Drive" active={currentPage === 'home'} onClick={() => setCurrentPage('home')} darkMode={darkMode} />
