@@ -1286,7 +1286,7 @@ const DriverHomePage = ({ showRestStops, setShowRestStops, onStopClick, activeRo
               <Navigation className="w-8 h-8 text-blue-600" />
               <div>
                   <div className="text-xs font-bold uppercase text-slate-500">
-                      Distance to Stop
+                      Distance to Stop: 500m
                   </div>
                   <div className="text-2xl font-bold text-slate-900">
                       Next: {activeNextStop?.name || "Destination"}
