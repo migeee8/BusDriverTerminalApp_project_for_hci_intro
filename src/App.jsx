@@ -17,13 +17,6 @@ const route4Stops = [
     { name: "Fleminggatan", time: "00:42" },
     { name: "S:t Eriksplan", time: "00:48" },
     { name: "Odenplan", time: "00:55" },
-    { name: "Stadsbiblioteket", time: "00:58" },
-    { name: "Valhallavägen", time: "01:05" },
-    { name: "Östra station", time: "01:10" },
-    { name: "Stadion", time: "01:13" },
-    { name: "Musikhögskolan", time: "01:16" },
-    { name: "Garnisonen", time: "01:22" },
-    { name: "Radiohuset", time: "01:25" }
 ];
 
 const route6Stops = [
@@ -33,17 +26,11 @@ const route6Stops = [
     { name: "Storängsvägen", time: "00:10" },
     { name: "Östermalms IP", time: "00:14" },
     { name: "Stadion", time: "00:18" },
-    { name: "Östra Station", time: "00:22" },
-    { name: "Odengatan", time: "00:26" },
-    { name: "Roslagsgatan", time: "00:29" },
-    { name: "Stadsbiblioteket", time: "00:33" },
     { name: "Odenplan", time: "00:36", type: 'rest_stop', features: ['wc', 'food'], menu: [{ id: 2, name: "Salad Bowl", price: "85kr", isVegan: true, image: "🥗" },{ id: 104, name: "Caesar Salad", price: "75kr", isVegan: false, waitTime: 6, image: "🥗" },
         { id: 105, name: "Vegan Poke Bowl", price: "105kr", isVegan: true, waitTime: 8, image: "🍱" },
         { id: 106, name: "Hot Dog Special", price: "45kr", isVegan: false, waitTime: 3, image: "🌭" },] },
     { name: "Dalagatan", time: "00:40" },
     { name: "Karlbergsvägen", time: "00:44" },
-    { name: "Torsplan", time: "00:48" },
-    { name: "Karolinska Sjukhuset", time: "00:52" },
     { name: "Karolinska Institutet", time: "00:55" }
 ];
 
@@ -129,7 +116,7 @@ const LoginPage = ({ onLoginSuccess }) => {
                     <div className="w-24 h-24 bg-slate-200 rounded-full mx-auto mb-6 flex items-center justify-center border-4 border-white shadow-xl overflow-hidden">
                         <Users className="w-12 h-12 text-slate-400" /> {/* 这里可以用头像图片 */}
                     </div>
-                    <h1 className="text-5xl font-bold mb-2">Welcome, Jack</h1>
+                    <h1 className="text-5xl font-bold mb-2">Welcome, Max</h1>
                     <p className="text-xl text-slate-400">ID: 9527 • Senior Driver</p>
                     <div className="mt-8 flex gap-2 justify-center">
                         <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce" style={{animationDelay: '0s'}}></div>
@@ -1139,25 +1126,41 @@ const RestModeView = ({ onClose, darkMode }) => {
 };
 
 
-
-
-
 // --- 6. 驾驶主页 (Home Page) ---
 const DriverHomePage = ({ navigateToSchedule, showRestStops, setShowRestStops, onStopClick, activeRoute, darkMode, toggleDarkMode, onToggleMessages, onToggleRestMode, openRouteDetail, nextStopOverride, unreadCount}) => {
   const [time, setTime] = useState(new Date());
   const [capacity, setCapacity] = useState(45);
   const [isStopRequested, setIsStopRequested] = useState(false);
-  const [isEmergencyActive, setIsEmergencyActive] = useState(false);
   const [isVoiceActive, setIsVoiceActive] = useState(false);
   const [isSimulating, setIsSimulating] = useState(false);
   const [currentStopIndex, setCurrentStopIndex] = useState(0);
   const timelineRef = useRef(null);
-  const [isApproaching, setIsApproaching] = useState(false);
   
   // 使用真实路由或默认路由
   let rawStops = activeRoute ? activeRoute.timeline : generateTimeline(route4Stops, 18, 0);
 
-  
+  // 坐标定义 (0-100%)
+  const routePathCoordinates = [
+      { x: 30, y: 80 }, // Start
+      { x: 32, y: 76 },
+      { x: 34, y: 72 },
+      { x: 36, y: 68 },
+      { x: 40, y: 60 },
+      { x: 42, y: 56 }, 
+      { x: 45, y: 50 },
+      { x: 50, y: 40 },
+      { x: 55, y: 30 },
+      { x: 65, y: 20 },
+      { x: 80, y: 10 },
+      { x: 90, y: 5 },
+  ];
+
+  const getStopPosition = (index) => {
+      const safeIndex = Math.min(index, routePathCoordinates.length - 1);
+      const pos = routePathCoordinates[safeIndex];
+      if (!pos) return { left: 90, top: 5 }; 
+      return { left: pos.x, top: pos.y };
+  };
 
   const displayedStops = rawStops.map((item, index) => {
       let status = 'future';
@@ -1165,49 +1168,13 @@ const DriverHomePage = ({ navigateToSchedule, showRestStops, setShowRestStops, o
       else if (index === currentStopIndex) status = 'current';
       return { ...item, status };
   });
-// --- 修改：调整坐标计算 (整体向左平移) ---
-const getStopPosition = (index) => {
-    // 起始站：原 left: 55 -> 改为 35
-    if (index === 0) return { top: 35, left: 35 };
-    
-    // 第4站(弯道)：原 left: 75 -> 改为 55
-    if (index === 3) return { top: 15, left: 55 };
-    
-    // 其他站点：原 50 + index*5 -> 改为 30 + index*5
-    // 这样随着 index 增加，站点也不会太快跑出屏幕右侧
-    return { top: 40 + index * 5, left: 30 + index * 5 };
-};
 
   const currentRouteName = activeRoute ? `Bus ${activeRoute.route}` : "Bus 4";
   const currentBusNo = activeRoute ? `Vehicle: ${activeRoute.bus}` : "Vehicle: B-9527";
   const nextStop = displayedStops.slice(currentStopIndex + 1).find(s => s.type !== 'deadhead') || displayedStops[currentStopIndex + 1];
   const activeNextStop = nextStopOverride || nextStop;
 
-  useEffect(() => {
-    let interval;
-    if (isSimulating) {
-        // 缩短时间间隔，让状态切换更流畅
-        interval = setInterval(() => {
-            if (!isApproaching) {
-                // 阶段 1：先进入“接近模式” (Zoom In)
-                setIsApproaching(true);
-            } else {
-                // 阶段 2：到达站点，切下一站，并重置缩放 (Zoom Out)
-                setCurrentStopIndex(prev => {
-                    if (prev >= rawStops.length - 1) { 
-                        setIsSimulating(false); 
-                        setIsApproaching(false);
-                        return 0; 
-                    }
-                    return prev + 1;
-                });
-                setIsApproaching(false); // 到站后恢复全景
-            }
-        }, 2500); // 每 2.5秒切换一次状态
-    }
-    return () => clearInterval(interval);
-    }, [isSimulating, isApproaching, rawStops.length]);
-
+  // 模拟逻辑
   useEffect(() => {
       let interval;
       if (isSimulating) {
@@ -1216,11 +1183,12 @@ const getStopPosition = (index) => {
                   if (prev >= rawStops.length - 1) { setIsSimulating(false); return 0; }
                   return prev + 1;
               });
-          }, 3000);
+          }, 3000); // 3秒一站
       }
       return () => clearInterval(interval);
   }, [isSimulating, rawStops.length]);
 
+  // 时间轴滚动
   useEffect(() => {
       if (timelineRef.current) {
           const currentElement = timelineRef.current.querySelector('[data-current="true"]');
@@ -1238,130 +1206,62 @@ const getStopPosition = (index) => {
   useEffect(() => { const timer = setInterval(() => setTime(new Date()), 1000); return () => clearInterval(timer); }, []);
   const formatTime = (d) => d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
+  // 状态管理
   const [sosState, setSosState] = useState('idle');
-
+  const [isEmergencyActive, setIsEmergencyActive] = useState(false);
   const handleSOS = () => {
-      if (sosState === 'idle') {
-          // 阶段 1: 进入待确认模式
-          setSosState('confirm');
-          // 3秒后如果没有确认，自动恢复，防止误触后一直卡在确认状态
-          setTimeout(() => {
-              setSosState(prev => prev === 'active' ? 'active' : 'idle');
-          }, 3000);
-      } else if (sosState === 'confirm') {
-          // 阶段 2: 确认发送
-          setSosState('active');
-          setIsEmergencyActive(true); // 触发原有的全屏红色警报
-          // 3秒后重置所有状态
-          setTimeout(() => {
-              setIsEmergencyActive(false);
-              setSosState('idle');
-          }, 3000);
-      }
+      if (sosState === 'idle') { setSosState('confirm'); setTimeout(() => setSosState(prev => prev === 'active' ? 'active' : 'idle'), 3000); } 
+      else if (sosState === 'confirm') { setSosState('active'); setIsEmergencyActive(true); setTimeout(() => { setIsEmergencyActive(false); setSosState('idle'); }, 3000); }
   };
-  const handleEmergency = () => { setIsEmergencyActive(true); setTimeout(() => setIsEmergencyActive(false), 3000); };
 
-  const [callStatus, setCallStatus] = useState('idle'); // 'idle' | 'calling' | 'connected'
-
+  const [callStatus, setCallStatus] = useState('idle');
   const handleCallDispatch = () => {
-      if (callStatus !== 'idle') return; // 防止重复点击
-
-      // 阶段 1: 呼叫中
+      if (callStatus !== 'idle') return;
       setCallStatus('calling');
+      setTimeout(() => { setCallStatus('connected'); setTimeout(() => { setCallStatus('idle'); }, 1500); }, 2000);
+  };
+
+  // --- 修改 1: 优化视角算法 ---
+  // 降低缩放倍率，保证视野上下文
+  const getMapTransformStyle = () => {
+      const targetIndex = currentStopIndex; 
+      const targetPos = getStopPosition(targetIndex);
       
-      // 模拟 2秒后接通
-      setTimeout(() => {
-          setCallStatus('connected');
-          
-          // 模拟 接通显示 1秒后恢复待机
-          setTimeout(() => {
-              setCallStatus('idle');
-          }, 1500);
-      }, 2000);
+      // 修改：将缩放从 2.5 降低到 1.6
+      const scale = 1.6; 
+      
+      // 屏幕中心(50) - 目标点位置 * 缩放
+      const translateX = 50 - (targetPos.left * scale);
+      const translateY = 50 - (targetPos.top * scale);
+
+      return {
+          transform: `translate(${translateX}%, ${translateY}%) scale(${scale})`,
+          transformOrigin: '0 0',
+          transition: 'transform 1.2s cubic-bezier(0.25, 1, 0.5, 1)',
+          width: '100%',
+          height: '100%',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          willChange: 'transform'
+      };
   };
 
-  const nextStopPos = getStopPosition(currentStopIndex + 1);
-
-    // 4. 定义动态样式
-  const mapContainerStyle = {
-    // 如果正在接近，放大 1.6 倍，否则保持原状
-    transform: isApproaching ? 'scale(1.6)' : 'scale(1)',
-    // 关键：将缩放的中心点设置为“下一站”的坐标，实现“聚焦”效果
-    transformOrigin: isApproaching ? `${nextStopPos.left}% ${nextStopPos.top}%` : 'center center',
-    transition: 'transform 1.5s cubic-bezier(0.4, 0, 0.2, 1)', // 平滑过渡动画
-    width: '100%',
-    height: '100%',
-    position: 'absolute',
-    top: 0,
-    left: 0 
-  };
-
-  // --- 新增：动态延误模拟 ---
+  // 延误模拟
   const [delayMinutes, setDelayMinutes] = useState(0);
-
-  // 模拟路况变化：每 5 秒随机更新一次延误时间 (-4 到 +8 分钟之间)
   useEffect(() => {
-      const interval = setInterval(() => {
-          const randomDelay = Math.floor(Math.random() * 13) - 4; 
-          setDelayMinutes(randomDelay);
-      }, 5000);
+      const interval = setInterval(() => { setDelayMinutes(Math.floor(Math.random() * 13) - 4); }, 5000);
       return () => clearInterval(interval);
   }, []);
+  const getDelayColor = (min) => { if (min < -2) return 'text-orange-500'; if (min <= 2) return 'text-green-500'; if (min < 5) return 'text-yellow-500'; return 'text-red-500'; };
+  const getDelayText = (min) => { if (min < -2) return "Early"; if (min <= 2) return "On Time"; if (min < 5) return "Delay"; return "Late"; };
 
-  // 颜色与文案辅助函数 (保持逻辑，优化样式类)
-  const getDelayColor = (min) => { 
-      if (min < -2) return 'text-orange-500'; // 早点 (Early)
-      if (min <= 2) return 'text-green-500';  // 准点 (On Time)
-      if (min < 5) return 'text-yellow-500';  // 轻微延误 (Delay)
-      return 'text-red-500';                  // 严重晚点 (Late)
-  };
-  
-  const getDelayText = (min) => { 
-      if (min < -2) return "Early"; 
-      if (min <= 2) return "On Time"; 
-      if (min < 5) return "Delay"; 
-      return "Late"; 
-  };
-
-  useEffect(() => {
-      // 每 6 秒进行一次判定：30% 的概率切换状态（模拟有人按铃/车门打开重置）
-      const interval = setInterval(() => {
-          if (Math.random() > 0.7) {
-              setIsStopRequested(prev => !prev); 
-          }
-      }, 6000);
-      return () => clearInterval(interval);
-  }, []);
-
-  // --- 新增：模拟载客量动态变化 (Capacity Simulation) ---
-  useEffect(() => {
-      const interval = setInterval(() => {
-          setCapacity(prev => {
-              // 模拟上下车：随机变化 -5% 到 +10% 之间
-              const change = Math.floor(Math.random() * 16) - 5;
-              let newCap = prev + change;
-              
-              // 边界限制：不能小于 0% 也不能大于 100%
-              if (newCap > 100) newCap = 100;
-              if (newCap < 0) newCap = 0;
-              
-              return newCap;
-          });
-      }, 3000); // 每 3 秒更新一次
-      return () => clearInterval(interval);
-  }, []);
-
+  // 其他模拟状态
+  useEffect(() => { const interval = setInterval(() => { if (Math.random() > 0.7) setIsStopRequested(prev => !prev); }, 6000); return () => clearInterval(interval); }, []);
+  useEffect(() => { const interval = setInterval(() => { setCapacity(prev => { const change = Math.floor(Math.random() * 16) - 5; let newCap = prev + change; if (newCap > 100) newCap = 100; if (newCap < 0) newCap = 0; return newCap; }); }, 3000); return () => clearInterval(interval); }, []);
   const [doorsLocked, setDoorsLocked] = useState(true);
   const [interiorLights, setInteriorLights] = useState(false);
-
-  useEffect(() => {
-      const interval = setInterval(() => {
-          // 模拟物理面板操作：随机切换门和灯的状态
-          if (Math.random() > 0.7) setDoorsLocked(prev => !prev);
-          if (Math.random() > 0.8) setInteriorLights(prev => !prev);
-      }, 4000); // 4秒检查一次变化
-      return () => clearInterval(interval);
-  }, []);
+  useEffect(() => { const interval = setInterval(() => { if (Math.random() > 0.7) setDoorsLocked(prev => !prev); if (Math.random() > 0.8) setInteriorLights(prev => !prev); }, 4000); return () => clearInterval(interval); }, []);
 
   return (
     <div className={`flex flex-col h-full w-full font-sans overflow-hidden select-none relative transition-colors duration-500 ${darkMode ? 'bg-slate-900 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
@@ -1371,48 +1271,21 @@ const getStopPosition = (index) => {
             <div className={`text-sm font-mono transition-all ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>{currentBusNo}</div>
         </div>
         
-        {/* --- Header Right Section: Voice, Time, Delay --- */}
         <div className="flex items-center space-x-6">
-            
-            {/* 1. 语音按钮 (移至左侧，尺寸放大) */}
-            <button 
-                onClick={() => setIsVoiceActive(true)} 
-                className={`p-4 rounded-full transition-all active:scale-95 hover:shadow-lg ${darkMode ? 'bg-slate-700 text-blue-400 hover:bg-slate-600' : 'bg-blue-100 text-blue-600 hover:bg-blue-200'}`}
-            >
-                {/* 图标尺寸从 w-5 h-5 改为 w-7 h-7 */}
+            <button onClick={() => setIsVoiceActive(true)} className={`p-4 rounded-full transition-all active:scale-95 hover:shadow-lg ${darkMode ? 'bg-slate-700 text-blue-400 hover:bg-slate-600' : 'bg-blue-100 text-blue-600 hover:bg-blue-200'}`}>
                 <Mic className="w-7 h-7"/>
             </button>
-
-            {/* 2. 时间显示 */}
-            <div className={`text-5xl font-mono font-bold tracking-wider ${darkMode ? 'text-white' : 'text-slate-800'}`}>
-                {formatTime(time)}
-            </div>
-
-            {/* 3. 动态延误状态条 (已移除 Border) */}
+            <div className={`text-5xl font-mono font-bold tracking-wider ${darkMode ? 'text-white' : 'text-slate-800'}`}>{formatTime(time)}</div>
             <div className={`flex items-center space-x-3 px-5 py-2 rounded-2xl transition-colors duration-500 ${darkMode ? 'bg-slate-900' : 'bg-white'}`}>
-                {/* 状态指示条可视化 */}
                 <div className="flex items-center space-x-1">
-                    {/* 早点指示条 (Orange) */}
                     <div className={`w-2 h-5 rounded-sm transition-colors duration-500 ${delayMinutes < -2 ? 'bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.6)]' : 'bg-slate-300 opacity-20'}`}></div>
-                    
-                    {/* 准点指示条 (Green) */}
                     <div className={`w-2 h-5 rounded-sm transition-colors duration-500 ${delayMinutes >= -2 && delayMinutes <= 2 ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-slate-300 opacity-20'}`}></div>
-                    
-                    {/* 分隔线 */}
                     <div className="w-0.5 h-6 bg-slate-400/30 mx-1"></div>
-                    
-                    {/* 晚点指示条 (Yellow/Red) */}
                     <div className={`w-2 h-5 rounded-sm transition-colors duration-500 ${delayMinutes > 2 ? (delayMinutes >= 5 ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]' : 'bg-yellow-500') : 'bg-slate-300 opacity-20'}`}></div>
                 </div>
-
-                {/* 文字数值显示 */}
                 <div className="flex flex-col leading-none text-right min-w-[60px]">
-                    <span className={`text-xl font-bold font-mono transition-colors duration-500 ${getDelayColor(delayMinutes)}`}>
-                        {delayMinutes > 0 ? `+${delayMinutes}` : delayMinutes}:00
-                    </span>
-                    <span className={`text-[10px] font-bold uppercase tracking-wide transition-colors duration-500 ${getDelayColor(delayMinutes)}`}>
-                        {getDelayText(delayMinutes)}
-                    </span>
+                    <span className={`text-xl font-bold font-mono transition-colors duration-500 ${getDelayColor(delayMinutes)}`}>{delayMinutes > 0 ? `+${delayMinutes}` : delayMinutes}:00</span>
+                    <span className={`text-[10px] font-bold uppercase tracking-wide transition-colors duration-500 ${getDelayColor(delayMinutes)}`}>{getDelayText(delayMinutes)}</span>
                 </div>
             </div>
         </div>
@@ -1437,22 +1310,14 @@ const getStopPosition = (index) => {
               const isRestStop = stop.type === 'rest_stop';
               const isCurrent = stop.status === 'current';
               let dotClass = isRestStop 
-                ? `w-10 h-10 rounded-xl ... (Rest Stop 保持不变)` 
-                : `w-10 h-10 rounded-full border-4 flex items-center justify-center shrink-0 z-10 transition-colors 
-                ${isCurrent 
-                    ? (darkMode 
-                        ? 'bg-blue-600 border-white text-white shadow-[0_0_15px_rgba(59,130,246,0.6)]' // Dark Mode 高亮增强
-                        : 'bg-blue-600 border-blue-200 text-white shadow-lg') 
-                    : (darkMode 
-                        ? 'bg-slate-800 border-slate-600 text-slate-500' // 普通站点加深背景
-              : 'bg-slate-100 border-slate-300 text-slate-500')}`;
+                ? `w-10 h-10 rounded-xl flex items-center justify-center shrink-0 z-10 transition-colors ${isCurrent ? 'bg-orange-500 text-white shadow-lg scale-110' : (darkMode ? 'bg-slate-700 text-orange-400 border border-orange-900' : 'bg-orange-50 text-orange-500 border border-orange-200')}`
+                : `w-10 h-10 rounded-full border-4 flex items-center justify-center shrink-0 z-10 transition-colors ${isCurrent ? (darkMode ? 'bg-blue-600 border-white text-white shadow-[0_0_15px_rgba(59,130,246,0.6)]' : 'bg-blue-600 border-blue-200 text-white shadow-lg') : (darkMode ? 'bg-slate-800 border-slate-600 text-slate-500' : 'bg-slate-100 border-slate-300 text-slate-500')}`;
+              
               return (
                 <div key={stop.id} data-current={isCurrent} className={`flex items-start mb-6 relative group cursor-pointer transition-all duration-500 ${isCurrent ? (darkMode ? 'bg-slate-700/50 -mx-2 p-2 rounded-lg' : 'bg-slate-50 -mx-2 p-2 rounded-lg') : ''}`} onClick={() => isRestStop && onStopClick(stop)}>
                   <div className={dotClass}>{isRestStop ? <Coffee className="w-5 h-5" /> : <span className="text-xs font-bold">{index + 1}</span>}</div>
                   <div className="ml-3 flex-1">
-                    <div className="flex justify-between items-start"><div className={`font-bold leading-tight ${isCurrent ? (darkMode ? 'text-white text-xl' : 'text-blue-800 text-xl') : (darkMode ? 'text-slate-400' : 'text-slate-700')}`}>
-                    {stop.name}
-                </div><div className={`text-xs font-mono mt-1 ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>{stop.time}</div></div>
+                    <div className="flex justify-between items-start"><div className={`font-bold leading-tight ${isCurrent ? (darkMode ? 'text-white text-xl' : 'text-blue-800 text-xl') : (darkMode ? 'text-slate-400' : 'text-slate-700')}`}>{stop.name}</div><div className={`text-xs font-mono mt-1 ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>{stop.time}</div></div>
                     {isRestStop && stop.features && (<div className="flex space-x-2 mt-1.5">{stop.features.includes('wc') && <div className={`flex items-center text-[10px] px-1.5 rounded font-bold ${darkMode ? 'bg-slate-700 text-slate-300' : 'bg-slate-100 text-slate-500'}`}><Info className="w-3 h-3 mr-1"/>WC</div>}{stop.features.includes('food') && <div className={`flex items-center text-[10px] px-1.5 rounded font-bold ${darkMode ? 'bg-orange-900/30 text-orange-400' : 'bg-orange-50 text-orange-500'}`}><Utensils className="w-3 h-3 mr-1"/>Food</div>}</div>)}
                   </div>
                 </div>
@@ -1466,68 +1331,77 @@ const getStopPosition = (index) => {
 
         <main className={`flex-1 relative flex flex-col items-center justify-center overflow-hidden transition-colors duration-500 ${darkMode ? 'bg-slate-900' : 'bg-slate-100'}`}>
           
-          {/* --- 缩放容器：包裹地图背景和站点图标 --- */}
-          <div style={mapContainerStyle}>
-              {/* 背景网格 */}
+          {/* --- 缩放容器 --- */}
+          <div style={getMapTransformStyle()}>
+              {/* 背景网格 & SVG 路径 */}
               <div className="absolute inset-0 opacity-40 pointer-events-none">
-                  <div className="w-full h-full" style={{backgroundImage: `linear-gradient(${darkMode ? '#475569' : '#94a3b8'} 1px, transparent 1px), linear-gradient(90deg, ${darkMode ? '#475569' : '#94a3b8'} 1px, transparent 1px)`, backgroundSize: '40px 40px', transform: 'perspective(500px) rotateX(20deg) scale(1.5)', transformOrigin: 'bottom'}}></div>
-                  <svg className="absolute inset-0 w-full h-full" style={{transform: 'perspective(500px) rotateX(20deg) scale(1.5)', transformOrigin: 'bottom'}}>
-                      <path d="M 300 800 C 320 760, 340 720, 360 680" fill="none" stroke="#22c55e" strokeWidth="20" strokeLinecap="round" />
-                      <path d="M 360 680 C 380 640, 400 600, 420 560" fill="none" stroke="#ef4444" strokeWidth="20" strokeLinecap="round" />
-                      <path d="M 420 560 C 450 500, 500 400, 500 200 S 800 50, 900 0" fill="none" stroke={darkMode ? "#1e293b" : "#3b82f6"} strokeWidth="20" strokeLinecap="round" />
+                  {/* Grid */}
+                  <div className="w-full h-full" style={{backgroundImage: `linear-gradient(${darkMode ? '#475569' : '#94a3b8'} 1px, transparent 1px), linear-gradient(90deg, ${darkMode ? '#475569' : '#94a3b8'} 1px, transparent 1px)`, backgroundSize: '40px 40px'}}></div>
+                  
+                  {/* Map Path */}
+                  <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+                      <path d="M 30 80 Q 35 70 40 60" fill="none" stroke="#22c55e" strokeWidth="1.5" strokeLinecap="round" strokeDasharray="1,1" />
+                      <path d="M 40 60 Q 45 50 50 40" fill="none" stroke="#ef4444" strokeWidth="1.5" strokeLinecap="round" />
+                      <path d="M 50 40 Q 60 25 90 5" fill="none" stroke={darkMode ? "#1e293b" : "#3b82f6"} strokeWidth="1.5" strokeLinecap="round" />
+                      <circle cx="90" cy="5" r="3" fill="none" stroke={darkMode ? "#1e293b" : "#3b82f6"} strokeWidth="0.5" opacity="0.5"/>
                   </svg>
               </div>
 
-              {/* 站点渲染循环 */}
-              {displayedStops.map((stop, index) => {
-                  const pos = getStopPosition(index); // 使用新的辅助函数
-                  // 这里的样式要加上 % 单位
-                  const posStyle = { top: `${pos.top}%`, left: `${pos.left}%` };
-                  
-                  // 判断是否为下一站且正在接近 (用于显示高亮光环)
-                  const isNextAndApproaching = index === currentStopIndex + 1 && isApproaching;
+             {/* 站点渲染 */}
+             {displayedStops.map((stop, index) => {
+                 const pos = getStopPosition(index);
+                 const posStyle = { top: `${pos.top}%`, left: `${pos.left}%` };
+                 
+                 const isActive = index === currentStopIndex;
+                 const isPassed = index < currentStopIndex;
 
-                  if (stop.type === 'rest_stop') {
-                      if (!showRestStops) return null;
-                      return (
-                          <div key={stop.id} className="absolute z-30 flex flex-col items-center cursor-pointer group hover:scale-110 transition-transform" style={posStyle} onClick={() => onStopClick(stop)}>
-                              <div className="bg-white px-3 py-1.5 rounded-lg shadow-lg mb-2 flex items-center space-x-2 border border-orange-200">
-                                  <span className="font-bold text-xs text-slate-800 whitespace-nowrap">{stop.name}</span>
-                              </div>
-                              <div className="relative">
-                                  <MapPin className="w-10 h-10 text-orange-500 fill-current drop-shadow-lg relative z-10" />
-                                  <div className="absolute top-2 left-1/2 -translate-x-1/2 text-white font-bold text-[10px] z-20">
-                                      <Coffee className="w-3 h-3"/>
-                                  </div>
-                              </div>
-                          </div>
-                      );
-                  } else { 
-                      return (
-                          <div key={stop.id} className={`absolute z-30 flex flex-col items-center transition-all duration-300`} style={posStyle}>
-                              {/* 圆点图标：增加了 isNextAndApproaching 的高亮样式逻辑 */}
-                              <div className={`flex items-center justify-center rounded-full shadow-lg border-2 transition-all duration-500 
-                                  ${stop.status === 'current' ? 'w-10 h-10 bg-blue-600 border-white text-white ring-4 ring-blue-500/30' : 'w-8 h-8 bg-white border-blue-600 text-blue-600'}
-                                  ${isNextAndApproaching ? 'scale-125 ring-4 ring-green-400 shadow-[0_0_20px_rgba(74,222,128,0.6)]' : ''}
-                              `}>
-                                  {stop.status === 'current' ? <Bus className="w-5 h-5" /> : <span className="text-xs font-bold">{index + 1}</span>}
-                              </div>
-                              <div className={`mt-1.5 px-2 py-1 rounded-md text-xs font-bold shadow-sm whitespace-nowrap bg-white/90 text-slate-800`}>
-                                  {stop.name}
-                              </div>
-                          </div>
-                      ); 
-                  }
-              })}
+                 if (stop.type === 'rest_stop') {
+                     if (!showRestStops) return null;
+                     return (
+                         <div key={stop.id} className={`absolute z-30 flex flex-col items-center cursor-pointer group transition-transform duration-500 -translate-x-1/2 -translate-y-1/2 ${isActive ? 'scale-125 z-50' : ''}`} style={posStyle} onClick={() => onStopClick(stop)}>
+                             <div className="relative">
+                                 <MapPin className={`w-8 h-8 fill-current drop-shadow-lg relative z-10 ${isActive ? 'text-orange-600 animate-bounce' : 'text-orange-500'}`} />
+                                 <div className="absolute top-1.5 left-1/2 -translate-x-1/2 text-white font-bold text-[8px] z-20"><Coffee className="w-3 h-3"/></div>
+                             </div>
+                         </div>
+                     );
+                 } else { 
+                     return (
+                         <div key={stop.id} className={`absolute z-30 flex flex-col items-center transition-all duration-500 -translate-x-1/2 -translate-y-1/2`} style={posStyle}>
+                             
+                             {/* --- 修改 2: 调整气泡文字大小和 Padding --- */}
+                             {isActive && (
+                                 <div className={`mb-2 px-3 py-1.5 rounded-lg text-sm font-bold shadow-xl whitespace-nowrap animate-in zoom-in slide-in-from-bottom-2 duration-300 flex flex-col items-center 
+                                     ${darkMode ? 'bg-slate-800 text-white border border-slate-600' : 'bg-white text-slate-900 border border-blue-100'}`}>
+                                     {stop.name}
+                                     <div className={`absolute -bottom-1 w-2.5 h-2.5 rotate-45 ${darkMode ? 'bg-slate-800 border-b border-r border-slate-600' : 'bg-white border-b border-r border-blue-100'}`}></div>
+                                 </div>
+                             )}
+
+                             {/* 圆点图标样式 */}
+                             <div className={`flex items-center justify-center rounded-full shadow-lg border-2 transition-all duration-500 relative
+                                 ${isActive 
+                                   ? 'w-10 h-10 bg-blue-600 border-white text-white ring-4 ring-blue-400/50 z-50 scale-110' 
+                                   : (isPassed 
+                                       ? 'w-4 h-4 bg-slate-300 border-slate-200 opacity-50' 
+                                       : 'w-4 h-4 bg-white border-blue-300' 
+                                     )
+                                 }
+                             `}>
+                                 {isActive && <Bus className="w-5 h-5 animate-pulse" />} 
+                             </div>
+                         </div>
+                     ); 
+                 }
+             })}
           </div>
 
-          {/* --- 顶部导航指示条 (不随地图缩放，固定在上方) --- */}
+          {/* 顶部指示条 */}
           <div className="absolute top-6 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur border border-slate-300 px-6 py-3 rounded-2xl shadow-xl flex items-center space-x-4 pointer-events-none z-20">
-              <Navigation className={`w-8 h-8 ${isApproaching ? 'text-green-500 animate-pulse' : 'text-blue-600'}`} />
+              <Navigation className="w-8 h-8 text-blue-600" />
               <div>
-                  {/* 动态显示的距离提示文字 */}
-                  <div className={`text-xs font-bold uppercase transition-colors duration-300 ${isApproaching ? 'text-green-600' : 'text-slate-500'}`}>
-                      {isApproaching ? 'Approaching Stop (200m)' : '1.2 km Straight'}
+                  <div className="text-xs font-bold uppercase text-slate-500">
+                      Distance to Stop
                   </div>
                   <div className="text-2xl font-bold text-slate-900">
                       Next: {activeNextStop?.name || "Destination"}
@@ -1536,14 +1410,9 @@ const getStopPosition = (index) => {
           </div>
         </main>
 
-<aside className={`w-1/4 border-r flex flex-col z-20 shadow-xl transition-colors duration-500 p-5 gap-5 ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
-           
-           {/* --- 分区 1: 状态监控 (Status Monitor) --- */}
-           {/* 调整高度适配内容 */}
+        <aside className={`w-1/4 border-r flex flex-col z-20 shadow-xl transition-colors duration-500 p-5 gap-5 ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
            <div className={`flex-[1.2] rounded-3xl p-4 flex flex-col gap-4 border ${darkMode ? 'bg-slate-900/50 border-slate-700' : 'bg-slate-100/80 border-slate-200'}`}>
                <div className={`text-[10px] font-bold uppercase tracking-widest px-1 ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>Vehicle Status</div>
-               
-               {/* 1. 载客量 (Capacity) - 保持原样 */}
                <div className={`h-12 rounded-xl border relative overflow-hidden flex items-center justify-between px-3 z-0 ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
                    <div className={`absolute inset-y-0 left-0 transition-all duration-1000 ease-out opacity-20 z-0 ${capacity > 80 ? 'bg-red-500' : 'bg-green-500'}`} style={{ width: `${capacity}%` }}></div>
                    <div className="flex items-center gap-2 relative z-10">
@@ -1552,105 +1421,47 @@ const getStopPosition = (index) => {
                    </div>
                    <span className={`text-lg font-bold relative z-10 ${capacity > 80 ? 'text-red-500' : (darkMode ? 'text-white' : 'text-slate-800')}`}>{capacity}%</span>
                </div>
-
-               {/* 2. 三联状态指示 (Status Indicators) - 纯文字，无边框，三列布局 */}
                <div className="flex-1 grid grid-cols-3 items-center justify-items-center divide-x divide-slate-200/50 dark:divide-slate-700/50">
-                   
-                   {/* Stop Request */}
                    <div className={`flex flex-col items-center justify-center transition-all duration-300 ${isStopRequested ? 'scale-110' : 'opacity-50'}`}>
-                       <span className={`text-[10px] font-bold uppercase mb-1 tracking-wider ${isStopRequested ? 'text-red-500' : 'text-slate-400'}`}>
-                           Request
-                       </span>
-                       <span className={`text-sm font-black uppercase transition-colors duration-300 ${isStopRequested ? 'text-red-600 animate-pulse' : (darkMode ? 'text-slate-600' : 'text-slate-300')}`}>
-                           {isStopRequested ? 'STOP' : 'NO STOP'}
-                       </span>
+                       <span className={`text-[10px] font-bold uppercase mb-1 tracking-wider ${isStopRequested ? 'text-red-500' : 'text-slate-400'}`}>Request</span>
+                       <span className={`text-sm font-black uppercase transition-colors duration-300 ${isStopRequested ? 'text-red-600 animate-pulse' : (darkMode ? 'text-slate-600' : 'text-slate-300')}`}>{isStopRequested ? 'STOP' : 'NO STOP'}</span>
                    </div>
-
-                   {/* Door Status */}
                    <div className="flex flex-col items-center justify-center">
-                       <span className={`text-[10px] font-bold uppercase mb-1 tracking-wider ${!doorsLocked ? 'text-orange-500' : 'text-slate-400 opacity-50'}`}>
-                           Door
-                       </span>
-                       <span className={`text-sm font-black uppercase transition-colors duration-300 ${!doorsLocked ? 'text-orange-500' : (darkMode ? 'text-slate-600' : 'text-slate-300')}`}>
-                           {doorsLocked ? 'CLOSED' : 'OPEN'}
-                       </span>
+                       <span className={`text-[10px] font-bold uppercase mb-1 tracking-wider ${!doorsLocked ? 'text-orange-500' : 'text-slate-400 opacity-50'}`}>Door</span>
+                       <span className={`text-sm font-black uppercase transition-colors duration-300 ${!doorsLocked ? 'text-orange-500' : (darkMode ? 'text-slate-600' : 'text-slate-300')}`}>{doorsLocked ? 'CLOSED' : 'OPEN'}</span>
                    </div>
-
-                   {/* Light Status */}
                    <div className="flex flex-col items-center justify-center">
-                       <span className={`text-[10px] font-bold uppercase mb-1 tracking-wider ${interiorLights ? 'text-yellow-500' : 'text-slate-400 opacity-50'}`}>
-                           Light
-                       </span>
-                       <span className={`text-sm font-black uppercase transition-colors duration-300 ${interiorLights ? 'text-yellow-500 drop-shadow-[0_0_8px_rgba(234,179,8,0.5)]' : (darkMode ? 'text-slate-600' : 'text-slate-300')}`}>
-                           {interiorLights ? 'ON' : 'OFF'}
-                       </span>
+                       <span className={`text-[10px] font-bold uppercase mb-1 tracking-wider ${interiorLights ? 'text-yellow-500' : 'text-slate-400 opacity-50'}`}>Light</span>
+                       <span className={`text-sm font-black uppercase transition-colors duration-300 ${interiorLights ? 'text-yellow-500 drop-shadow-[0_0_8px_rgba(234,179,8,0.5)]' : (darkMode ? 'text-slate-600' : 'text-slate-300')}`}>{interiorLights ? 'ON' : 'OFF'}</span>
                    </div>
-
                </div>
            </div>
 
-           {/* --- 分区 2: 操作控制 (Control Grid) - 保持不变 --- */}
-{/* --- 分区 2: 操作控制 (Control Grid) --- */}
            <div className="flex-[4] flex flex-col gap-4">
-               
-               {/* 第一排：消息 + 休息模式 */}
                <div className="flex-1 flex gap-4">
                    <button onClick={onToggleMessages} className={`flex-1 rounded-2xl border-2 flex flex-col items-center justify-center relative transition-all active:scale-[0.98] shadow-sm hover:shadow-md group ${darkMode ? 'bg-slate-700 border-slate-600 hover:bg-slate-600' : 'bg-white border-slate-200 hover:bg-blue-50/50'}`}>
-                        <div className="relative mb-2"> {/* mb-1 -> mb-2 增加间距 */}
-                            {/* 图标放大：w-6 -> w-10 */}
+                        <div className="relative mb-2">
                             <MessageSquare className="w-10 h-10 text-blue-500 group-hover:scale-110 transition-transform" />
-                            
-                            {/* 红点位置微调，配合大图标 */}
-                            {unreadCount > 0 && (
-                                <div className="absolute -top-1 -right-1.5 w-3 h-3"> {/* 红点稍微大一点点 */}
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500 border-2 border-white"></span>
-                                </div>
-                            )}
+                            {unreadCount > 0 && (<div className="absolute -top-1 -right-1.5 w-3 h-3"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span><span className="relative inline-flex rounded-full h-3 w-3 bg-red-500 border-2 border-white"></span></div>)}
                         </div>
-                        {/* 文字放大：text-xs -> text-base (甚至 text-lg) */}
                         <span className={`text-base font-bold ${darkMode ? 'text-slate-200' : 'text-slate-700'}`}>Messages</span>
                    </button>
 
                    <button onClick={onToggleRestMode} className={`flex-1 rounded-2xl border-2 flex flex-col items-center justify-center transition-all active:scale-[0.98] shadow-sm hover:shadow-md group ${darkMode ? 'bg-slate-800 border-slate-600 hover:bg-slate-700' : 'bg-indigo-50 border-indigo-100 hover:bg-indigo-100'}`}>
-                       {/* 图标放大：w-6 -> w-10 */}
                        <Coffee className={`w-10 h-10 mb-2 transition-transform group-hover:rotate-12 ${darkMode ? 'text-indigo-400' : 'text-indigo-500'}`} />
-                       {/* 文字放大 */}
                        <span className={`text-base font-bold ${darkMode ? 'text-indigo-300' : 'text-indigo-700'}`}>Rest Mode</span>
                    </button>
                </div>
 
-               {/* 第二排：呼叫 + SOS */}
                <div className="flex-1 flex gap-4">
-                   <button 
-                       onClick={handleCallDispatch}
-                       disabled={callStatus !== 'idle'}
-                       className={`flex-1 rounded-2xl border-2 flex flex-col items-center justify-center transition-all active:scale-[0.95] shadow-sm
-                       ${callStatus === 'idle' 
-                           ? (darkMode ? 'bg-slate-700 border-slate-600 hover:bg-slate-600' : 'bg-white border-slate-200 hover:bg-slate-50') 
-                           : callStatus === 'calling' ? 'bg-blue-100 border-blue-300' : 'bg-green-100 border-green-300'
-                       }`}
-                   >
-                       {/* 图标放大：w-6 -> w-9 (PhoneCall图标本身比较大，w-9视觉上就很大了) */}
+                   <button onClick={handleCallDispatch} disabled={callStatus !== 'idle'} className={`flex-1 rounded-2xl border-2 flex flex-col items-center justify-center transition-all active:scale-[0.95] shadow-sm ${callStatus === 'idle' ? (darkMode ? 'bg-slate-700 border-slate-600 hover:bg-slate-600' : 'bg-white border-slate-200 hover:bg-slate-50') : callStatus === 'calling' ? 'bg-blue-100 border-blue-300' : 'bg-green-100 border-green-300'}`}>
                        <PhoneCall className={`w-9 h-9 mb-2 transition-all ${callStatus === 'calling' ? 'text-blue-600 animate-bounce' : (callStatus === 'connected' ? 'text-green-600' : 'text-blue-500')}`} />
-                       <span className={`text-sm font-bold ${callStatus === 'calling' ? 'text-blue-700' : (callStatus === 'connected' ? 'text-green-700' : (darkMode ? 'text-slate-300' : 'text-slate-600'))}`}>
-                           {callStatus === 'idle' ? 'Dispatch' : (callStatus === 'calling' ? 'Calling...' : 'Connected')}
-                       </span>
+                       <span className={`text-sm font-bold ${callStatus === 'calling' ? 'text-blue-700' : (callStatus === 'connected' ? 'text-green-700' : (darkMode ? 'text-slate-300' : 'text-slate-600'))}`}>{callStatus === 'idle' ? 'Dispatch' : (callStatus === 'calling' ? 'Calling...' : 'Connected')}</span>
                    </button>
                    
-                   <button 
-                       onClick={handleSOS} 
-                       className={`flex-1 rounded-2xl border-2 flex flex-col items-center justify-center transition-all active:scale-[0.95] shadow-sm
-                       ${sosState === 'confirm' 
-                           ? 'bg-red-600 border-red-700 animate-pulse' 
-                           : sosState === 'active' ? 'bg-red-800 border-red-900' : 'bg-red-50 border-red-100 hover:bg-red-100'
-                       }`}
-                   >
-                       {/* 图标放大：w-6 -> w-9 */}
+                   <button onClick={handleSOS} className={`flex-1 rounded-2xl border-2 flex flex-col items-center justify-center transition-all active:scale-[0.95] shadow-sm ${sosState === 'confirm' ? 'bg-red-600 border-red-700 animate-pulse' : sosState === 'active' ? 'bg-red-800 border-red-900' : 'bg-red-50 border-red-100 hover:bg-red-100'}`}>
                        <ShieldAlert className={`w-9 h-9 mb-2 transition-colors ${sosState === 'idle' ? 'text-red-600' : 'text-white'}`} />
-                       <span className={`text-sm font-bold ${sosState === 'idle' ? 'text-red-600' : 'text-white'}`}>
-                           {sosState === 'idle' ? 'SOS' : (sosState === 'confirm' ? 'CONFIRM?' : 'SENT')}
-                       </span>
+                       <span className={`text-sm font-bold ${sosState === 'idle' ? 'text-red-600' : 'text-white'}`}>{sosState === 'idle' ? 'SOS' : (sosState === 'confirm' ? 'CONFIRM?' : 'SENT')}</span>
                    </button>
                </div>
            </div>
@@ -1725,10 +1536,10 @@ const SchedulePage = ({ darkMode, openRouteDetail, onLogout }) => {
                 </div>
                 <div className={`flex items-center gap-4 px-6 py-3 rounded-2xl border shadow-sm ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
                     <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-lg shadow-md border-2 border-white/20">
-                        JD
+                        MD
                     </div>
                     <div>
-                        <div className="font-bold text-lg leading-none">Jack Driver</div>
+                        <div className="font-bold text-lg leading-none">Max Driver</div>
                         <div className="text-xs font-mono opacity-60 mt-1 flex items-center gap-2">
                             <span>ID: 9527</span>
                             <span className="w-1 h-1 bg-current rounded-full"></span>
