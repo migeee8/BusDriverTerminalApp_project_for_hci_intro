@@ -1,17 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { CloudSun, Droplets, Cloud, CloudRain  } from 'lucide-react';
-import { Clock, MapPin, Navigation, Users, Coffee, MessageSquare, AlertTriangle, LogOut, ChevronRight, ChevronLeft, Calendar, X, Utensils, Car, Phone, Share2, Star, Info, Map as MapIcon, Leaf, AlertCircle, Timer, Eye, EyeOff, PhoneCall, ShieldAlert, Accessibility, Mail, Bell, CheckCircle, Smile, Meh, Frown, Music, Volume2, Activity, History as HistoryIcon, Bus, Warehouse, Flag, ArrowRight, BellRing, Play, Sun, Moon, Pause, Mic, Wind, Thermometer, Fan, Lock, Unlock, Zap, LayoutGrid, Home, Radio } from 'lucide-react';
+import { CloudSun, Cloud, CloudRain, ToggleLeft, ToggleRight, Clock, MapPin, Navigation, Users, Coffee, MessageSquare, LogOut, 
+    ChevronLeft, Calendar, X, Utensils, Phone, Info, Map as MapIcon, Leaf, AlertCircle, Timer, Eye, EyeOff, PhoneCall, ShieldAlert,
+     Mail, CheckCircle, Smile, Meh, Frown, Music, Volume2, Activity, History, Bus, Warehouse, Flag, ArrowRight, Play, Sun, 
+     Moon, Pause, Mic, Wind, Thermometer, Fan, Home } from 'lucide-react';
 
-// --- 1. 真实线路数据 ---
+// --- Route Info ---
 const route4Stops = [
     { name: "Gullmarsplan", time: "00:00" },
     { name: "Skanstull", time: "00:05" },
-    { name: "Eriksdal", time: "00:08" },
+    { name: "Eriksdal", time: "00:08",type: 'rest_stop', features: ['wc'],},
     { name: "Rosenlund", time: "00:12" },
     { name: "Södra station", time: "00:15" },
     { name: "Zinkensdamm", time: "00:20" },
-    { name: "Hornstull", time: "00:25", type: 'rest_stop', features: ['wc', 'food'], menu: [{ id: 1, name: "Coffee & Bun", price: "45kr", isVegan: true, image: "☕️" }, { id: 102, name: "Falafel Wrap", price: "65kr", isVegan: true, waitTime: 5, image: "🌯" },
-        { id: 103, name: "Meatballs & Mash", price: "95kr", isVegan: false, waitTime: 12, image: "🍲" },] },
+    { name: "Hornstull", time: "00:25", type: 'rest_stop', features: ['wc', 'food'],
+        menu: [{ id: 101, name: "Coffee & Bun", price: "45kr", isVegan: true, waitTime: 5, image: "☕️" }, 
+                { id: 102, name: "Falafel Wrap", price: "65kr", isVegan: true, waitTime: 5, image: "🌯" },
+                { id: 103, name: "Meatballs & Mash", price: "95kr", isVegan: false, waitTime: 12, image: "🍲" },] },
     { name: "Västerbroplan", time: "00:32" },
     { name: "Fridhemsplan", time: "00:38" },
     { name: "Fleminggatan", time: "00:42" },
@@ -23,12 +27,14 @@ const route6Stops = [
     { name: "Ropsten", time: "00:00" },
     { name: "Drevergatan", time: "00:04" },
     { name: "Jaktgatan", time: "00:07" },
-    { name: "Storängsvägen", time: "00:10" },
+    { name: "Storängsvägen", time: "00:10", type: 'rest_stop', features: ['wc'],},
     { name: "Östermalms IP", time: "00:14" },
     { name: "Stadion", time: "00:18" },
-    { name: "Odenplan", time: "00:36", type: 'rest_stop', features: ['wc', 'food'], menu: [{ id: 2, name: "Salad Bowl", price: "85kr", isVegan: true, image: "🥗" },{ id: 104, name: "Caesar Salad", price: "75kr", isVegan: false, waitTime: 6, image: "🥗" },
-        { id: 105, name: "Vegan Poke Bowl", price: "105kr", isVegan: true, waitTime: 8, image: "🍱" },
-        { id: 106, name: "Hot Dog Special", price: "45kr", isVegan: false, waitTime: 3, image: "🌭" },] },
+    { name: "Odenplan", time: "00:36", type: 'rest_stop', features: ['wc', 'food'], 
+        menu: [{ id: 2, name: "Salad Bowl", price: "85kr", isVegan: true, waitTime: 5, image: "🥗" },
+            { id: 104, name: "Caesar Salad", price: "75kr", isVegan: false, waitTime: 6, image: "🥗" },
+            { id: 105, name: "Vegan Poke Bowl", price: "105kr", isVegan: true, waitTime: 8, image: "🍱" },
+            { id: 106, name: "Hot Dog Special", price: "45kr", isVegan: false, waitTime: 3, image: "🌭" },] },
     { name: "Dalagatan", time: "00:40" },
     { name: "Karlbergsvägen", time: "00:44" },
     { name: "Karolinska Institutet", time: "00:55" }
@@ -54,15 +60,28 @@ const generateTimeline = (stops, startHour, startMinute) => {
     });
 };
 
+const TabButton = ({ icon, label, active, onClick, darkMode }) => (
+    <button 
+        onClick={onClick} 
+        className={`flex-1 flex flex-col items-center justify-center h-full transition-all duration-300 ${active ? 'text-blue-500' : (darkMode ? 'text-slate-500 hover:text-slate-300' : 'text-slate-400 hover:text-slate-600')}`}
+    >
+        <div className={`p-1 rounded-2xl mb-1 transition-all ${active ? (darkMode ? 'bg-blue-500/20' : 'bg-blue-50') : ''}`}>
+            {React.cloneElement(icon, { className: `w-6 h-6 ${active ? 'stroke-[2.5px]' : 'stroke-2'}` })}
+        </div>
+        <span className="text-sm font-bold uppercase tracking-wider mt-1">
+            {label}
+        </span>
+    </button>
+);
+
+// --- [Login Page] ---
 const LoginPage = ({ onLoginSuccess }) => {
     const [loginStep, setLoginStep] = useState('idle'); // idle, processing, welcome
 
     const handleSwipe = () => {
         setLoginStep('processing');
-        // 模拟读取卡片数据
         setTimeout(() => {
             setLoginStep('welcome');
-            // 显示欢迎动画后进入主页
             setTimeout(() => {
                 onLoginSuccess();
             }, 2500);
@@ -71,7 +90,6 @@ const LoginPage = ({ onLoginSuccess }) => {
 
     return (
         <div className="absolute inset-0 z-[100] bg-slate-900 text-white flex flex-col items-center justify-center p-8 overflow-hidden">
-            {/* 背景装饰 */}
             <div className="absolute inset-0 opacity-20 pointer-events-none">
                 <div className="absolute top-0 left-0 w-96 h-96 bg-blue-500 rounded-full blur-[100px] -translate-x-1/2 -translate-y-1/2"></div>
                 <div className="absolute bottom-0 right-0 w-96 h-96 bg-purple-500 rounded-full blur-[100px] translate-x-1/2 translate-y-1/2"></div>
@@ -90,7 +108,6 @@ const LoginPage = ({ onLoginSuccess }) => {
                             Please swipe your Employee ID card on the reader to start your shift.
                         </p>
                         
-                        {/* 模拟刷卡动作的按钮 */}
                         <button 
                             onClick={handleSwipe}
                             className="group relative flex items-center gap-3 px-8 py-4 bg-blue-600 hover:bg-blue-500 rounded-full font-bold transition-all active:scale-95 shadow-[0_0_20px_rgba(37,99,235,0.5)]"
@@ -114,7 +131,7 @@ const LoginPage = ({ onLoginSuccess }) => {
             {loginStep === 'welcome' && (
                 <div className="z-10 text-center animate-in slide-in-from-bottom-10 fade-in duration-700">
                     <div className="w-24 h-24 bg-slate-200 rounded-full mx-auto mb-6 flex items-center justify-center border-4 border-white shadow-xl overflow-hidden">
-                        <Users className="w-12 h-12 text-slate-400" /> {/* 这里可以用头像图片 */}
+                        <Users className="w-12 h-12 text-slate-400" /> 
                     </div>
                     <h1 className="text-5xl font-bold mb-2">Welcome, Max</h1>
                     <p className="text-xl text-slate-400">ID: 9527 • Senior Driver</p>
@@ -129,38 +146,15 @@ const LoginPage = ({ onLoginSuccess }) => {
     );
 };
 
-
-// --- 2. 车辆状态页面 (Updated: Independent Zone Climate Control) ---
+// --- [Vehicle Status Page] ---
 const VehicleStatusPage = ({ darkMode }) => {
-    // --- 1. Climate Controls (独立温区逻辑) ---
-    // 分别定义全车和驾驶员的温度
     const [tempAll, setTempAll] = useState(22);
     const [tempDriver, setTempDriver] = useState(20);
-    
     const [fanSpeed, setFanSpeed] = useState(2);
     const [climateZone, setClimateZone] = useState('all'); // 'all' or 'driver'
     const [acActive, setAcActive] = useState(true);
     const [heatActive, setHeatActive] = useState(false);
     const [autoMode, setAutoMode] = useState(false);
-
-    // 计算当前应该显示的温度
-    const currentTemp = climateZone === 'all' ? tempAll : tempDriver;
-
-    // 处理温度调节
-    const handleTempChange = (e) => {
-        const newVal = e.target.value;
-        if (climateZone === 'all') {
-            setTempAll(newVal);
-        } else {
-            setTempDriver(newVal);
-        }
-    };
-
-    // Read-only Status
-    const [doorsLocked, setDoorsLocked] = useState(true);
-    const [interiorLights, setInteriorLights] = useState(false);
-    const [ecoScore, setEcoScore] = useState(92);
-
     // Weather Data
     const hourlyForecast = [
         { time: "Now", temp: 18, icon: <Sun className="w-5 h-5 text-orange-500"/> },
@@ -172,6 +166,17 @@ const VehicleStatusPage = ({ darkMode }) => {
         { time: "19:00", temp: 15, icon: <Cloud className="w-5 h-5 text-slate-500"/> },
         { time: "20:00", temp: 14, icon: <Moon className="w-5 h-5 text-indigo-400"/> },
     ];
+
+    const currentTemp = climateZone === 'all' ? tempAll : tempDriver;
+    const handleTempChange = (e) => {
+        const newVal = e.target.value;
+        if (climateZone === 'all') {
+            setTempAll(newVal);
+        } else {
+            setTempDriver(newVal);
+        }
+    };
+    const [ecoScore, setEcoScore] = useState(92);
 
     // Climate Handlers
     const toggleAc = () => { if (!acActive) { setHeatActive(false); setAutoMode(false); } setAcActive(!acActive); };
@@ -199,50 +204,38 @@ const VehicleStatusPage = ({ darkMode }) => {
             </header>
             
             <div className="flex gap-6 h-[85%]">
-                
-                {/* --- 左列：空调控制 (Climate Control) - Updated Logic --- */}
+                {/* Climate Control Section */}
                 <div className={`w-1/2 p-6 rounded-3xl flex flex-col ${darkMode ? 'bg-slate-800' : 'bg-white shadow-sm'}`}>
                     <div className="flex justify-between items-center mb-6">
                         <h2 className="text-xl font-bold flex items-center"><Thermometer className="w-5 h-5 mr-2 text-red-500"/> Climate Control</h2>
-                        
-                        {/* 区域切换按钮 */}
                         <div className={`flex rounded-lg p-1 ${darkMode ? 'bg-slate-900' : 'bg-slate-200'}`}>
                             <button 
                                 onClick={() => setClimateZone('all')} 
-                                className={`px-4 py-1 rounded-md text-xs font-bold transition-all ${climateZone === 'all' ? 'bg-blue-500 text-white shadow-sm' : 'opacity-50 hover:opacity-100'}`}
-                            >
-                                All Zones
+                                className={`px-4 py-1 rounded-md text-xs font-bold transition-all ${climateZone === 'all' ? 'bg-blue-500 text-white shadow-sm' : 'opacity-50 hover:opacity-100'}`}>
+                                All 
                             </button>
                             <button 
                                 onClick={() => setClimateZone('driver')} 
-                                className={`px-4 py-1 rounded-md text-xs font-bold transition-all ${climateZone === 'driver' ? 'bg-blue-500 text-white shadow-sm' : 'opacity-50 hover:opacity-100'}`}
-                            >
+                                className={`px-4 py-1 rounded-md text-xs font-bold transition-all ${climateZone === 'driver' ? 'bg-blue-500 text-white shadow-sm' : 'opacity-50 hover:opacity-100'}`}>
                                 Driver
                             </button>
                         </div>
                     </div>
 
-                    {/* 温度显示区域 */}
                     <div className="flex-1 flex flex-col items-center justify-center mb-6 transition-all duration-300">
-                        {/* 动态显示 currentTemp */}
                         <div className="text-6xl font-bold text-yellow-400 tabular-nums">{currentTemp}°C</div>
-                        {/* 文字提示当前控制的是哪个区域 */}
                         <div className="text-sm opacity-50 mt-1 font-bold tracking-wider uppercase">
                             {climateZone === 'all' ? 'Cabin Target Temperature' : 'Driver Seat Temperature'}
                         </div>
                     </div>
-
-                    {/* 滑块：绑定 currentTemp 和 handleTempChange */}
                     <input 
                         type="range" 
                         min="16" 
                         max="30" 
                         value={currentTemp} 
                         onChange={handleTempChange} 
-                        className="w-full h-2 bg-gradient-to-r from-blue-500 via-green-500 to-red-500 rounded-lg appearance-none cursor-pointer mb-8" 
-                    />
+                        className="w-full h-2 bg-gradient-to-r from-blue-500 via-green-500 to-red-500 rounded-lg appearance-none cursor-pointer mb-8" />
 
-                    {/* 底部按钮组 */}
                     <div className="grid grid-cols-2 gap-4 mt-auto">
                          <button onClick={toggleAc} className={`p-4 rounded-2xl flex flex-col items-center justify-center border-2 transition-all active:scale-95 ${acActive ? (darkMode ? 'border-blue-500 bg-blue-500/20 text-blue-400' : 'border-blue-500 bg-blue-50 text-blue-600') : (darkMode ? 'border-slate-600 bg-slate-700 text-slate-400' : 'border-slate-200 bg-white text-slate-400')}`}><Fan className="w-6 h-6 mb-2"/><span className="text-xs font-bold">A/C {acActive ? 'ON' : 'OFF'}</span></button>
                          <button onClick={toggleHeat} className={`p-4 rounded-2xl flex flex-col items-center justify-center border-2 transition-all active:scale-95 ${heatActive ? (darkMode ? 'border-red-500 bg-red-500/20 text-red-400' : 'border-red-500 bg-red-50 text-red-600') : (darkMode ? 'border-slate-600 bg-slate-700 text-slate-400' : 'border-slate-200 bg-white text-slate-400')}`}><Thermometer className="w-6 h-6 mb-2"/><span className="text-xs font-bold">Heat {heatActive ? 'ON' : 'OFF'}</span></button>
@@ -251,14 +244,10 @@ const VehicleStatusPage = ({ darkMode }) => {
                     </div>
                 </div>
 
-                {/* --- 右列：环境 & 系统 (保持之前的天气预报版本) --- */}
                 <div className="w-1/2 flex flex-col gap-4">
-                     
-                     {/* 板块 1: External Environment (Apple Weather Style) */}
+                    {/* External Environment Section */}
                      <div className={`p-5 rounded-3xl flex flex-col gap-4 ${darkMode ? 'bg-slate-800' : 'bg-white shadow-sm'}`}>
                          <h2 className="text-lg font-bold flex items-center"><CloudSun className="w-5 h-5 mr-2 text-blue-400"/> External Environment</h2>
-                         
-                         {/* 上半部：当前概览 */}
                          <div className="flex gap-4">
                              <div className={`flex-1 p-3 rounded-2xl flex items-center justify-between ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
                                  <div>
@@ -277,8 +266,6 @@ const VehicleStatusPage = ({ darkMode }) => {
                                  <Sun className="w-8 h-8 text-orange-500 animate-spin-slow" style={{animationDuration: '10s'}}/>
                              </div>
                          </div>
-
-                         {/* 下半部：每小时预报 */}
                          <div className={`w-full h-px ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`}></div>
                          <div className="flex overflow-x-auto gap-2 pb-2 no-scrollbar">
                              {hourlyForecast.map((hour, index) => (
@@ -293,9 +280,7 @@ const VehicleStatusPage = ({ darkMode }) => {
                              ))}
                          </div>
                      </div>
-
-
-                     {/* 板块 3: Eco-Drive Index */}
+                    {/* Eco-Drive Index Section */}
                      <div className={`flex-1 p-5 rounded-3xl flex flex-col ${darkMode ? 'bg-slate-800' : 'bg-white shadow-sm'}`}>
                          <h2 className="text-lg font-bold mb-4 flex items-center"><Leaf className="w-5 h-5 mr-2 text-green-500"/> Eco-Drive Index</h2>
                          <div className="flex items-center gap-6 h-full">
@@ -316,47 +301,30 @@ const VehicleStatusPage = ({ darkMode }) => {
                             </div>
                          </div>
                      </div>
-
                 </div>
             </div>
         </div>
     );
 };
-// --- 3. 休息站详情弹窗 (Updated: Better Size & Interactive Order) ---
+
+// --- [Rest Stop Detail Modal] ---
 const StopDetailModal = ({ stop, onClose, onNavigate }) => {
     const [activeTab, setActiveTab] = useState('menu');
     const [veganFilter, setVeganFilter] = useState(false);
-    
-    // 新增：点餐状态管理 { itemId: 'idle' | 'loading' | 'success' }
+    // { itemId: 'idle' | 'loading' | 'success' } for feedback animation
     const [orderStates, setOrderStates] = useState({});
 
     if (!stop) return null;
-
-    // --- 扩充菜单数据 (模拟更多食物) ---
-    // 如果 stop 自带菜单就用自带的，否则使用默认扩充菜单
     const defaultMenu = [
         { id: 101, name: "Classic Burger", price: "89kr", isVegan: false, waitTime: 10, image: "🍔" },
-        { id: 102, name: "Falafel Wrap", price: "65kr", isVegan: true, waitTime: 5, image: "🌯" },
-        { id: 103, name: "Meatballs & Mash", price: "95kr", isVegan: false, waitTime: 12, image: "🍲" },
-        { id: 104, name: "Caesar Salad", price: "75kr", isVegan: false, waitTime: 6, image: "🥗" },
-        { id: 105, name: "Vegan Poke Bowl", price: "105kr", isVegan: true, waitTime: 8, image: "🍱" },
-        { id: 106, name: "Hot Dog Special", price: "45kr", isVegan: false, waitTime: 3, image: "🌭" },
     ];
-    
-    // 合并数据 (优先使用传入的 menu，如果没有则用 defaultMenu)
     const menuData = stop.menu && stop.menu.length > 0 ? stop.menu : defaultMenu;
     const filteredMenu = menuData.filter(item => !veganFilter || item.isVegan);
 
-    // --- 处理点餐逻辑 ---
     const handleOrder = (itemId) => {
-        // 1. 设置该物品为加载状态
         setOrderStates(prev => ({ ...prev, [itemId]: 'loading' }));
-
-        // 2. 模拟网络请求 (1.5秒)
         setTimeout(() => {
             setOrderStates(prev => ({ ...prev, [itemId]: 'success' }));
-            
-            // 3. 2秒后恢复初始状态
             setTimeout(() => {
                 setOrderStates(prev => ({ ...prev, [itemId]: 'idle' }));
             }, 2000);
@@ -365,18 +333,12 @@ const StopDetailModal = ({ stop, onClose, onNavigate }) => {
 
     return (
         <div className="absolute inset-0 z-[60] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm animate-in fade-in">
-            {/* 修改：尺寸缩小 max-w-2xl, h-[80vh] */}
             <div className="bg-white w-full max-w-2xl h-[80vh] rounded-[2.5rem] overflow-hidden shadow-2xl relative flex flex-col animate-in zoom-in-95 duration-300">
-                
-                {/* 关闭按钮 */}
-                <button 
-                    onClick={onClose} 
-                    className="absolute top-4 right-4 bg-black/40 hover:bg-black/60 text-white p-3 rounded-full z-20 backdrop-blur-md active:scale-90 transition-all shadow-lg"
-                >
+                <button  onClick={onClose}  className="absolute top-4 right-4 bg-black/40 hover:bg-black/60 text-white p-3 rounded-full z-20 backdrop-blur-md active:scale-90 transition-all shadow-lg">
                     <X className="w-6 h-6" />
                 </button>
 
-                {/* Header 图片区域：高度稍微减小 */}
+                {/* --- Header Image --- */}
                 <div className="h-56 shrink-0 bg-slate-800 relative flex items-center justify-center overflow-hidden">
                     <div className="absolute inset-0 opacity-50 bg-gradient-to-br from-blue-900 to-slate-900"></div>
                     <Coffee className="w-24 h-24 text-white/10" />
@@ -389,7 +351,7 @@ const StopDetailModal = ({ stop, onClose, onNavigate }) => {
                     </div>
                 </div>
 
-                {/* Tabs 标签页 */}
+                {/* --- Tabs --- */}
                 <div className="flex border-b border-slate-200 shrink-0 bg-white shadow-sm z-10">
                     <button 
                         onClick={() => setActiveTab('menu')} 
@@ -405,7 +367,7 @@ const StopDetailModal = ({ stop, onClose, onNavigate }) => {
                     </button>
                 </div>
 
-                {/* 内容区域 */}
+                {/* --- Content Area --- */}
                 <div className="flex-1 overflow-y-auto bg-slate-50 p-6 custom-scrollbar">
                     {activeTab === 'menu' && (
                         <div className="space-y-4">
@@ -417,9 +379,7 @@ const StopDetailModal = ({ stop, onClose, onNavigate }) => {
                             </div>
 
                             {filteredMenu.length > 0 ? filteredMenu.map(item => {
-                                // 获取当前物品的状态
                                 const status = orderStates[item.id] || 'idle';
-
                                 return (
                                     <div key={item.id} className="bg-white p-4 rounded-3xl shadow-sm border border-slate-200 flex items-center gap-5 transition-transform hover:scale-[1.01]">
                                         <div className="text-4xl bg-slate-100 w-24 h-24 rounded-2xl flex items-center justify-center shrink-0 shadow-inner">{item.image}</div>
@@ -443,8 +403,6 @@ const StopDetailModal = ({ stop, onClose, onNavigate }) => {
                                                 {item.waitTime} min wait
                                             </div>
                                         </div>
-
-                                        {/* --- 点餐按钮 (Interactive) --- */}
                                         <button 
                                             onClick={() => handleOrder(item.id)}
                                             disabled={status !== 'idle'}
@@ -504,7 +462,7 @@ const StopDetailModal = ({ stop, onClose, onNavigate }) => {
     );
 };
 
-// --- 3. 路线详情弹窗 (Fixed Close Button) ---
+// --- [Route Detail Modal] ---
 const RouteDetailModal = ({ shift, onClose, onStartNavigation }) => {
     if (!shift) return null;
 
@@ -569,282 +527,240 @@ const RouteDetailModal = ({ shift, onClose, onStartNavigation }) => {
     );
 };
 
-// --- 4. 消息中心 (Updated: Voice Input Feedback) ---
+// --- [Message Center Page] ---
 const MessageCenterPage = ({ onClose, messages, onMarkRead, darkMode }) => {
-  const [selectedMessage, setSelectedMessage] = useState(null);
-  
-  // 输入框文字状态
-  const [replyText, setReplyText] = useState("");
-  // 发送状态 'idle' | 'sending' | 'success'
-  const [sendStatus, setSendStatus] = useState('idle');
-  // 新增：语音录入状态
-  const [isListening, setIsListening] = useState(false);
+    const [selectedMessage, setSelectedMessage] = useState(null);
+    const [replyText, setReplyText] = useState("");
+    const [sendStatus, setSendStatus] = useState('idle');
+    const [isListening, setIsListening] = useState(false);
 
-  useEffect(() => { 
-      if (!selectedMessage && messages.length > 0) setSelectedMessage(messages[0]); 
-  }, [messages, selectedMessage]);
+    const handleMarkAsRead = (msg) => {
+        setSelectedMessage(msg);
+        if (!msg.read) {
+            onMarkRead(msg.id); 
+        }
+    };
+    const handleSend = (textToSend) => {
+        const content = textToSend || replyText;
+        if (!content.trim()) return;
+        setSendStatus('sending');
+        setTimeout(() => {
+            setSendStatus('success');
+            setReplyText("");
+            setTimeout(() => {
+                setSendStatus('idle');
+            }, 1500);
+        }, 1500);
+    };
+    const handleVoiceInput = () => {
+        if (isListening || sendStatus !== 'idle') return;
+        setIsListening(true);
+        setReplyText(""); 
+        setTimeout(() => {
+            setIsListening(false);
+            setReplyText("I will arrive at the terminal in 10 minutes."); 
+        }, 2000);
+    };
 
-  useEffect(() => {
-      setReplyText("");
-      setSendStatus('idle');
-      setIsListening(false);
-  }, [selectedMessage]);
+    useEffect(() => { 
+        if (!selectedMessage && messages.length > 0) setSelectedMessage(messages[0]); 
+    }, [messages, selectedMessage]);
 
-  const handleMarkAsRead = (msg) => {
-      setSelectedMessage(msg);
-      if (!msg.read) {
-          onMarkRead(msg.id); 
-      }
-  };
-
-  // 模拟发送逻辑
-  const handleSend = (textToSend) => {
-      const content = textToSend || replyText;
-      if (!content.trim()) return;
-
-      setSendStatus('sending');
-      setTimeout(() => {
-          setSendStatus('success');
-          setReplyText("");
-          setTimeout(() => {
-              setSendStatus('idle');
-          }, 1500);
-      }, 1500);
-  };
-
-  // 新增：模拟语音输入逻辑
-  const handleVoiceInput = () => {
-      if (isListening || sendStatus !== 'idle') return;
-
-      // 1. 开始录音状态
-      setIsListening(true);
-      setReplyText(""); // 清空当前输入
-
-      // 2. 模拟录音持续 2秒
-      setTimeout(() => {
-          // 3. 录音结束，填入模拟文本
-          setIsListening(false);
-          setReplyText("I will arrive at the terminal in 10 minutes."); // 模拟识别出的文字
-      }, 2000);
-  };
+    useEffect(() => {
+        setReplyText("");
+        setSendStatus('idle');
+        setIsListening(false);
+    }, [selectedMessage]);
 
   return (
     <div className={`absolute inset-0 w-full h-full shadow-2xl z-50 flex flex-row transition-colors duration-300 ${darkMode ? 'bg-slate-900' : 'bg-slate-50'}`}>
       
-      {/* --- 左侧独立导航栏 --- */}
-      <div 
-        onClick={onClose} 
-        className={`w-40 border-r flex flex-col items-center justify-center shrink-0 z-50 relative cursor-pointer group transition-colors duration-300 hover:bg-black/5 active:bg-black/10 ${darkMode ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'}`}
-      >
-        <div className={`w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-active:scale-95 shadow-lg ${darkMode ? 'bg-slate-700 text-white' : 'bg-slate-100 text-slate-700'}`}>
-            <ChevronLeft className="w-10 h-10 group-hover:-translate-x-1 transition-transform" />
-        </div>
-        <span className={`text-xs font-bold uppercase mt-6 tracking-widest opacity-60 group-hover:opacity-100 transition-opacity ${darkMode ? 'text-white' : 'text-slate-800'}`}>
-            Back to Drive
-        </span>
-      </div>
-
-      {/* --- 右侧内容区域 --- */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden">
-        
-        {/* Header */}
-        <div className={`flex items-center justify-between p-8 border-b shrink-0 ${darkMode ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'}`}>
-            <div className="flex items-center">
-                 <div className="p-3 bg-blue-100 rounded-2xl mr-4 shadow-sm"><MessageSquare className="w-8 h-8 text-blue-600"/></div>
-                 <div>
-                     <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-slate-800'}`}>Message Center</h1>
-                     <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Dispatch & System Alerts</p>
-                 </div>
+        {/* --- back button --- */}
+        <div 
+            onClick={onClose} 
+            className={`w-40 border-r flex flex-col items-center justify-center shrink-0 z-50 relative cursor-pointer group transition-colors duration-300 hover:bg-black/5 active:bg-black/10 ${darkMode ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'}`}
+        >
+            <div className={`w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-active:scale-95 shadow-lg ${darkMode ? 'bg-slate-700 text-white' : 'bg-slate-100 text-slate-700'}`}>
+                <ChevronLeft className="w-10 h-10 group-hover:-translate-x-1 transition-transform" />
             </div>
-            <div className="bg-red-500 text-white px-4 py-2 rounded-full text-sm font-bold shadow-md">
-                {messages.filter(m => !m.read).length} Unread
-            </div>
+            <span className={`text-xs font-bold uppercase mt-6 tracking-widest opacity-60 group-hover:opacity-100 transition-opacity ${darkMode ? 'text-white' : 'text-slate-800'}`}>
+                Back to Drive
+            </span>
         </div>
 
-        {/* 消息主体 */}
-        <div className="flex flex-1 overflow-hidden">
-            
-            {/* 左侧列表 */}
-            <div className={`w-1/3 border-r overflow-y-auto ${darkMode ? 'border-slate-700 bg-slate-800/50' : 'border-slate-200 bg-white'}`}>
-               {messages.map(msg => (
-                 <div 
-                    key={msg.id} 
-                    onClick={() => handleMarkAsRead(msg)} 
-                    className={`p-6 border-b cursor-pointer transition-all hover:pl-8 
-                    ${darkMode ? 'border-slate-700 hover:bg-slate-800' : 'border-slate-100 hover:bg-slate-50'} 
-                    ${selectedMessage?.id === msg.id 
-                        ? (darkMode ? 'bg-slate-800 border-l-4 border-l-blue-500' : 'bg-blue-50 border-l-4 border-l-blue-500') 
-                        : 'border-l-4 border-l-transparent'}`
-                    }
-                 >
-                    <div className="flex justify-between items-start mb-2">
-                        <div className="flex items-center">
-                            {!msg.read && <div className="w-2.5 h-2.5 bg-red-500 rounded-full mr-3 animate-pulse shadow-sm"></div>}
-                            <span className={`text-xs font-bold uppercase tracking-wider ${msg.priority === 'high' ? 'text-red-500' : (darkMode ? 'text-slate-400' : 'text-slate-500')}`}>
-                                {msg.sender}
-                            </span>
+        {/* --- content area --- */}
+        <div className="flex-1 flex flex-col h-full overflow-hidden">
+            {/* Header */}
+            <div className={`flex items-center justify-between p-8 border-b shrink-0 ${darkMode ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'}`}>
+                <div className="flex items-center">
+                        <div className="p-3 bg-blue-100 rounded-2xl mr-4 shadow-sm"><MessageSquare className="w-8 h-8 text-blue-600"/></div>
+                        <div>
+                            <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-slate-800'}`}>Message Center</h1>
+                            <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Dispatch & System Alerts</p>
                         </div>
-                        <span className={`text-[10px] ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>{msg.time}</span>
-                    </div>
-                    <div className={`font-bold text-base truncate ${!msg.read ? (darkMode ? 'text-white' : 'text-slate-900') : (darkMode ? 'text-slate-400' : 'text-slate-600')}`}>
-                        {msg.subject}
-                    </div>
-                 </div>
-               ))}
+                </div>
+                <div className="bg-red-500 text-white px-4 py-2 rounded-full text-sm font-bold shadow-md">
+                    {messages.filter(m => !m.read).length} Unread
+                </div>
             </div>
 
-            {/* 右侧详情 */}
-            <div className={`flex-1 p-8 flex flex-col overflow-hidden ${darkMode ? 'bg-slate-900' : 'bg-slate-50'}`}>
-               {selectedMessage ? (
-                 <div className={`flex flex-col h-full rounded-[2rem] shadow-sm border overflow-hidden animate-in fade-in slide-in-from-right-4 duration-300 ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
-                   
-                   {/* 详情 Header */}
-                   <div className={`p-8 border-b ${darkMode ? 'border-slate-700' : 'border-slate-100'}`}>
-                     <div className="flex justify-between items-start mb-6">
-                        <h2 className={`text-3xl font-bold leading-tight ${darkMode ? 'text-white' : 'text-slate-800'}`}>{selectedMessage.subject}</h2>
-                        {selectedMessage.priority === 'high' && (
-                            <span className="bg-red-500/10 text-red-500 px-4 py-2 rounded-xl text-xs font-bold flex items-center shrink-0 ml-4 border border-red-500/20">
-                                <AlertCircle className="w-5 h-5 mr-2" /> High Priority
-                            </span>
-                        )}
-                     </div>
-                     <div className={`flex items-center text-sm space-x-8 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                        <div className="flex items-center"><Users className="w-5 h-5 mr-2 opacity-70" /> <span className="font-bold">{selectedMessage.sender}</span></div>
-                        <div className="flex items-center"><Clock className="w-5 h-5 mr-2 opacity-70" /> <span>{selectedMessage.time}</span></div>
-                     </div>
-                   </div>
+            {/* Message Body */}
+            <div className="flex flex-1 overflow-hidden">
+                {/* Left List */}
+                <div className={`w-1/3 border-r overflow-y-auto ${darkMode ? 'border-slate-700 bg-slate-800/50' : 'border-slate-200 bg-white'}`}>
+                    {messages.map(msg => (
+                        <div 
+                        key={msg.id} 
+                        onClick={() => handleMarkAsRead(msg)} 
+                        className={`p-6 border-b cursor-pointer transition-all hover:pl-8 
+                        ${darkMode ? 'border-slate-700 hover:bg-slate-800' : 'border-slate-100 hover:bg-slate-50'} 
+                        ${selectedMessage?.id === msg.id 
+                            ? (darkMode ? 'bg-slate-800 border-l-4 border-l-blue-500' : 'bg-blue-50 border-l-4 border-l-blue-500') 
+                            : 'border-l-4 border-l-transparent'}`
+                        }
+                        >
+                        <div className="flex justify-between items-start mb-2">
+                            <div className="flex items-center">
+                                {!msg.read && <div className="w-2.5 h-2.5 bg-red-500 rounded-full mr-3 animate-pulse shadow-sm"></div>}
+                                <span className={`text-xs font-bold uppercase tracking-wider ${msg.priority === 'high' ? 'text-red-500' : (darkMode ? 'text-slate-400' : 'text-slate-500')}`}>
+                                    {msg.sender}
+                                </span>
+                            </div>
+                            <span className={`text-[10px] ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>{msg.time}</span>
+                        </div>
+                        <div className={`font-bold text-base truncate ${!msg.read ? (darkMode ? 'text-white' : 'text-slate-900') : (darkMode ? 'text-slate-400' : 'text-slate-600')}`}>
+                            {msg.subject}
+                        </div>
+                        </div>
+                    ))}
+                </div>
 
-                   {/* 详情内容 */}
-                   <div className="p-10 flex-1 overflow-y-auto">
-                       <p className={`text-xl leading-relaxed whitespace-pre-line ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>{selectedMessage.content}</p>
-                   </div>
-
-                   {/* 快速回复区 */}
-                   <div className={`p-6 border-t ${darkMode ? 'border-slate-700 bg-slate-800' : 'border-slate-100 bg-slate-50'}`}>
-                       <div className="flex gap-3 mb-6 overflow-x-auto pb-2 no-scrollbar">
-                           {["Received", "On my way", "Traffic heavy", "Need assistance"].map(reply => (
-                               <button 
-                                key={reply} 
-                                onClick={() => handleSend(reply)} 
-                                disabled={sendStatus !== 'idle' || isListening}
-                                className={`px-5 py-2.5 rounded-xl text-sm font-bold border whitespace-nowrap transition-all active:scale-95 
-                                    ${darkMode 
-                                        ? 'border-slate-600 hover:bg-slate-700 text-slate-300 disabled:opacity-50' 
-                                        : 'border-slate-300 hover:bg-white text-slate-600 disabled:opacity-50'}`}
-                               >
-                                   {reply}
-                               </button>
-                           ))}
-                       </div>
-                       
-                       {/* 输入栏容器 */}
-                       <div className={`flex gap-3 p-2 rounded-2xl border transition-colors duration-300 
-                            ${darkMode ? 'border-slate-600 bg-slate-900' : 'border-slate-200 bg-white'} 
-                            ${sendStatus === 'success' ? 'border-green-500 ring-1 ring-green-500' : ''}
-                            ${isListening ? 'border-red-500 ring-1 ring-red-500 bg-red-50/10' : ''} 
-                       `}>
-                            {/* --- 语音按钮 (Modified) --- */}
-                            <button 
-                                onClick={handleVoiceInput}
-                                disabled={sendStatus !== 'idle'}
-                                className={`p-4 rounded-xl transition-all duration-300 active:scale-95
-                                    ${isListening 
-                                        ? 'bg-red-500 text-white animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.5)]' // 录音中：红色闪烁
-                                        : (darkMode ? 'bg-slate-700 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200') // 待机
-                                    }`}
-                            >
-                                <Mic className={`w-6 h-6 ${isListening ? 'animate-bounce' : ''}`}/>
-                            </button>
-                            
-                            {/* 输入框 */}
-                            <input 
-                                type="text" 
-                                value={replyText}
-                                onChange={(e) => setReplyText(e.target.value)}
-                                onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-                                disabled={sendStatus !== 'idle' || isListening}
-                                placeholder={
-                                    isListening ? "Listening..." :
-                                    sendStatus === 'sending' ? "Sending..." : 
-                                    (sendStatus === 'success' ? "Message Sent!" : "Type a reply...")
-                                }
-                                className={`flex-1 bg-transparent outline-none px-4 text-lg transition-all 
-                                    ${darkMode ? 'text-white placeholder-slate-500' : 'text-slate-800'} 
-                                    ${sendStatus === 'success' ? 'text-green-600 font-bold' : ''}
-                                    ${isListening ? 'text-red-500 italic' : ''}
-                                `} 
-                            />
-                            
-                            {/* 发送按钮 */}
-                            <button 
-                                onClick={() => handleSend()} 
-                                disabled={sendStatus !== 'idle' || (!replyText.trim()) || isListening}
-                                className={`p-4 rounded-xl transition-all duration-300 active:scale-95 flex items-center justify-center min-w-[60px]
-                                    ${sendStatus === 'success' 
-                                        ? 'bg-green-500 text-white' 
-                                        : (sendStatus === 'sending' ? 'bg-slate-400 text-white cursor-wait' : 'bg-blue-600 text-white hover:bg-blue-700')
+                {/* Message Detail */}
+                <div className={`flex-1 p-8 flex flex-col overflow-hidden ${darkMode ? 'bg-slate-900' : 'bg-slate-50'}`}>
+                    {selectedMessage ? (
+                    <div className={`flex flex-col h-full rounded-[2rem] shadow-sm border overflow-hidden animate-in fade-in slide-in-from-right-4 duration-300 ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+                        <div className={`p-8 border-b ${darkMode ? 'border-slate-700' : 'border-slate-100'}`}>
+                            <div className="flex justify-between items-start mb-6">
+                            <h2 className={`text-3xl font-bold leading-tight ${darkMode ? 'text-white' : 'text-slate-800'}`}>{selectedMessage.subject}</h2>
+                            {selectedMessage.priority === 'high' && (
+                                <span className="bg-red-500/10 text-red-500 px-4 py-2 rounded-xl text-xs font-bold flex items-center shrink-0 ml-4 border border-red-500/20">
+                                    <AlertCircle className="w-5 h-5 mr-2" /> High Priority
+                                </span>
+                            )}
+                            </div>
+                            <div className={`flex items-center text-sm space-x-8 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                            <div className="flex items-center"><Users className="w-5 h-5 mr-2 opacity-70" /> <span className="font-bold">{selectedMessage.sender}</span></div>
+                            <div className="flex items-center"><Clock className="w-5 h-5 mr-2 opacity-70" /> <span>{selectedMessage.time}</span></div>
+                            </div>
+                        </div>
+                        <div className="p-10 flex-1 overflow-y-auto">
+                            <p className={`text-xl leading-relaxed whitespace-pre-line ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>{selectedMessage.content}</p>
+                        </div>
+                        {/* Reply Section */}
+                        <div className={`p-6 border-t ${darkMode ? 'border-slate-700 bg-slate-800' : 'border-slate-100 bg-slate-50'}`}>
+                            <div className="flex gap-3 mb-6 overflow-x-auto pb-2 no-scrollbar">
+                                {["Received", "On my way", "Traffic heavy", "Need assistance"].map(reply => (
+                                    <button 
+                                    key={reply} 
+                                    onClick={() => handleSend(reply)} 
+                                    disabled={sendStatus !== 'idle' || isListening}
+                                    className={`px-5 py-2.5 rounded-xl text-sm font-bold border whitespace-nowrap transition-all active:scale-95 
+                                        ${darkMode 
+                                            ? 'border-slate-600 hover:bg-slate-700 text-slate-300 disabled:opacity-50' 
+                                            : 'border-slate-300 hover:bg-white text-slate-600 disabled:opacity-50'}`}
+                                    >
+                                        {reply}
+                                    </button>
+                                ))}
+                            </div>
+                            <div className={`flex gap-3 p-2 rounded-2xl border transition-colors duration-300 
+                                        ${darkMode ? 'border-slate-600 bg-slate-900' : 'border-slate-200 bg-white'} 
+                                        ${sendStatus === 'success' ? 'border-green-500 ring-1 ring-green-500' : ''}
+                                        ${isListening ? 'border-red-500 ring-1 ring-red-500 bg-red-50/10' : ''} `}>
+                                {/* Voice Input Button */}
+                                <button 
+                                    onClick={handleVoiceInput}
+                                    disabled={sendStatus !== 'idle'}
+                                    className={`p-4 rounded-xl transition-all duration-300 active:scale-95
+                                        ${isListening 
+                                            ? 'bg-red-500 text-white animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.5)]' 
+                                            : (darkMode ? 'bg-slate-700 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200') 
+                                        }`}>
+                                    <Mic className={`w-6 h-6 ${isListening ? 'animate-bounce' : ''}`}/>
+                                </button>
+                                
+                                {/* Input Box*/}
+                                <input 
+                                    type="text" 
+                                    value={replyText}
+                                    onChange={(e) => setReplyText(e.target.value)}
+                                    onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+                                    disabled={sendStatus !== 'idle' || isListening}
+                                    placeholder={
+                                        isListening ? "Listening..." :
+                                        sendStatus === 'sending' ? "Sending..." : 
+                                        (sendStatus === 'success' ? "Message Sent!" : "Type a reply...")
                                     }
-                                    ${(!replyText.trim() && sendStatus === 'idle' && !isListening) ? 'opacity-50 cursor-not-allowed' : ''}
-                                `}
-                            >
-                                {sendStatus === 'idle' && <ArrowRight className="w-6 h-6"/>}
-                                {sendStatus === 'sending' && <ArrowRight className="w-6 h-6 animate-spin"/>}
-                                {sendStatus === 'success' && <CheckCircle className="w-6 h-6 animate-in zoom-in duration-300"/>}
-                            </button>
-                       </div>
-                   </div>
-                 </div>
-               ) : (
-                   <div className="flex-1 flex flex-col items-center justify-center text-slate-400">
-                       <Mail className="w-24 h-24 mb-6 opacity-10" />
-                       <p className="text-xl font-medium">Select a message to view details</p>
-                   </div>
-               )}
+                                    className={`flex-1 bg-transparent outline-none px-4 text-lg transition-all 
+                                        ${darkMode ? 'text-white placeholder-slate-500' : 'text-slate-800'} 
+                                        ${sendStatus === 'success' ? 'text-green-600 font-bold' : ''}
+                                        ${isListening ? 'text-red-500 italic' : ''}
+                                    `} 
+                                />
+                                
+                                {/* Send Button */}
+                                <button 
+                                    onClick={() => handleSend()} 
+                                    disabled={sendStatus !== 'idle' || (!replyText.trim()) || isListening}
+                                    className={`p-4 rounded-xl transition-all duration-300 active:scale-95 flex items-center justify-center min-w-[60px]
+                                        ${sendStatus === 'success' 
+                                            ? 'bg-green-500 text-white' 
+                                            : (sendStatus === 'sending' ? 'bg-slate-400 text-white cursor-wait' : 'bg-blue-600 text-white hover:bg-blue-700')
+                                        }
+                                        ${(!replyText.trim() && sendStatus === 'idle' && !isListening) ? 'opacity-50 cursor-not-allowed' : ''}
+                                    `}>
+                                    {sendStatus === 'idle' && <ArrowRight className="w-6 h-6"/>}
+                                    {sendStatus === 'sending' && <ArrowRight className="w-6 h-6 animate-spin"/>}
+                                    {sendStatus === 'success' && <CheckCircle className="w-6 h-6 animate-in zoom-in duration-300"/>}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    ) : (
+                    <div className="flex-1 flex flex-col items-center justify-center text-slate-400">
+                        <Mail className="w-24 h-24 mb-6 opacity-10" />
+                        <p className="text-xl font-medium">Select a message to view details</p>
+                    </div>
+                    )}
+                </div>
             </div>
         </div>
-      </div>
     </div>
   );
 };
-// --- 5. 休息模式 (Updated: Online Video Background & Real Audio) ---
-// --- 5. 休息模式 (Updated: YouTube Video Integration) ---
-import { 
- ToggleLeft, ToggleRight, History // 引入 Toggle 图标
-} from 'lucide-react';
 
-
+// --- [Rest Mode Page] ---
 const RestModeView = ({ onClose, darkMode }) => {
-    // --- 1. State Management ---
     const [mood, setMood] = useState('neutral');
     const [quoteIndex, setQuoteIndex] = useState(0);
     const [isPlayingMusic, setIsPlayingMusic] = useState(false);
-    
-    // 开关：控制背景视频
     const [showBackgroundVideo, setShowBackgroundVideo] = useState(false);
-    
-    // 历史记录相关 (已恢复)
     const [showHistory, setShowHistory] = useState(false);
     const [moodHistory, setMoodHistory] = useState([
         { id: 1, time: "10:30", mood: "happy", note: "Great traffic flow" },
         { id: 2, time: "12:15", mood: "tired", note: "Busy lunch rush" },
     ]);
-    
-    // 视频模态框状态
     const [playingVideo, setPlayingVideo] = useState(null); 
     const [videoLoaded, setVideoLoaded] = useState(false);
-    
     const audioRef = useRef(null);
     const [breathingText, setBreathingText] = useState("Breathe In");
 
-    // --- 2. Resources ---
-    const backgroundVideoUrl = "https://videos.pexels.com/video-files/1409899/1409899-hd_1920_1080_25fps.mp4";
 
+    const backgroundVideoUrl = "https://videos.pexels.com/video-files/1409899/1409899-hd_1920_1080_25fps.mp4";
     const youtubeVideos = {
         eye: { id: "_xWIlvOS_QI", title: "5-Min Eye Yoga", desc: "Follow the dot on the screen. Blink naturally." },
         body: { id: "bEDH_uTcdf4", title: "Seated Stretches", desc: "Simple seated stretches to relieve back tightness." }
     };
-
-    // --- 3. Themes & Styles ---
     const moodThemes = {
         happy: {
             bgGradient: darkMode ? 'from-green-900 to-black' : 'from-green-100 to-white',
@@ -871,10 +787,7 @@ const RestModeView = ({ onClose, darkMode }) => {
             icon: <Moon className={`w-32 h-32 absolute top-10 right-10 ${darkMode ? 'text-blue-300 opacity-10' : 'text-blue-500 opacity-20'}`} />
         }
     };
-
     const currentTheme = moodThemes[mood];
-
-    // Helper classes
     const glassClass = darkMode 
         ? "bg-black/20 border-white/10 text-white hover:bg-black/40" 
         : "bg-white/60 border-black/5 text-slate-800 hover:bg-white/80 shadow-sm";
@@ -884,14 +797,22 @@ const RestModeView = ({ onClose, darkMode }) => {
     const textClass = darkMode ? "text-white" : "text-slate-800";
     const subTextClass = darkMode ? "text-white/50" : "text-slate-500";
 
-    // --- Audio Logic ---
-    useEffect(() => {
-        if (audioRef.current) audioRef.current.pause();
-        audioRef.current = new Audio(currentTheme.audioUrl);
-        audioRef.current.loop = true;
-        if (isPlayingMusic) audioRef.current.play().catch(e => console.log("Audio play failed:", e));
-        return () => { if (audioRef.current) audioRef.current.pause(); };
-    }, [mood]);
+    const handleMoodChange = (newMood) => { 
+        setMood(newMood); 
+        setQuoteIndex(0); 
+        const notes = {
+            happy: "Feeling energetic!",
+            neutral: "Balanced state",
+            tired: "Taking a break"
+        };
+        const newEntry = {
+            id: Date.now(),
+            time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}),
+            mood: newMood,
+            note: notes[newMood]
+        };
+        setMoodHistory([newEntry, ...moodHistory]);
+    };
 
     const toggleMusic = () => {
         if (!audioRef.current) return;
@@ -899,45 +820,30 @@ const RestModeView = ({ onClose, darkMode }) => {
         else audioRef.current.play().catch(e => console.log("Audio play failed:", e));
         setIsPlayingMusic(!isPlayingMusic);
     };
+
+    useEffect(() => {
+        if (audioRef.current) audioRef.current.pause();
+        audioRef.current = new Audio(currentTheme.audioUrl);
+        audioRef.current.loop = true;
+        if (isPlayingMusic) audioRef.current.play().catch(e => console.log("Audio play failed:", e));
+        return () => { if (audioRef.current) audioRef.current.pause(); };
+    }, [mood]);
     
     useEffect(() => {
         return () => { if (audioRef.current) audioRef.current.pause(); };
     }, []);
 
-    // --- Effects ---
     useEffect(() => {
         const interval = setInterval(() => {
             setBreathingText(prev => prev === "Breathe In" ? "Breathe Out" : "Breathe In");
-        }, 4000); 
+        }, 6000); 
         return () => clearInterval(interval);
     }, []);
 
     useEffect(() => { 
-        const interval = setInterval(() => setQuoteIndex(p => (p + 1) % currentTheme.quote.length), 4000); 
+        const interval = setInterval(() => setQuoteIndex(p => (p + 1) % currentTheme.quote.length), 6000); 
         return () => clearInterval(interval); 
     }, [mood, currentTheme.quote.length]);
-
-    // --- 核心逻辑恢复：切换 Mood 并记录历史 ---
-    const handleMoodChange = (newMood) => { 
-        setMood(newMood); 
-        setQuoteIndex(0); 
-        
-        // 自动添加一条历史记录
-        const notes = {
-            happy: "Feeling energetic!",
-            neutral: "Balanced state",
-            tired: "Taking a break"
-        };
-        
-        const newEntry = {
-            id: Date.now(),
-            time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}),
-            mood: newMood,
-            note: notes[newMood]
-        };
-        
-        setMoodHistory([newEntry, ...moodHistory]);
-    };
 
     return (
         <div className={`absolute inset-0 w-full h-full shadow-2xl z-50 flex flex-row overflow-hidden transition-all duration-1000 ${darkMode ? 'bg-slate-900 text-white' : 'bg-slate-50 text-slate-900'}`}>
@@ -976,11 +882,9 @@ const RestModeView = ({ onClose, darkMode }) => {
                     </div>
                 </div>
                 
-                {/* Columns */}
                 <div className="flex-1 flex gap-8 p-8 relative z-10 overflow-hidden">
-                    
-                    {/* Col 1: Videos */}
-                    <div className="w-1/4 flex flex-col gap-4 justify-center animate-in slide-in-from-left-4 duration-700">
+                    {/*Eye Care & Body Stretch */}
+                    <div className="w-1/5 flex flex-col gap-4 justify-center animate-in slide-in-from-left-4 duration-700">
                         <button onClick={() => setPlayingVideo('eye')} className={`p-5 rounded-3xl border text-left transition-all active:scale-95 backdrop-blur-md group relative overflow-hidden ${glassClass}`}>
                             <div className="flex justify-between items-start relative z-10">
                                 <Eye className={`w-8 h-8 mb-2 ${currentTheme.accent}`} />
@@ -998,57 +902,49 @@ const RestModeView = ({ onClose, darkMode }) => {
                             <div className={`text-xs opacity-70 relative z-10 ${subTextClass}`}>Relieve pain</div>
                         </button>
                     </div>
-
-                    {/* Col 2: Breathing (Center) */}
+                    {/* Center */}
                     <div className="flex-1 flex flex-col items-center justify-center relative">
                         <div className="relative flex items-center justify-center">
-                            <div className={`absolute rounded-full opacity-30 animate-ping ${currentTheme.circle}`} style={{width: '320px', height: '320px', animationDuration: '4s'}}></div>
                             <div className={`w-72 h-72 rounded-full opacity-40 transition-all duration-[4000ms] ease-in-out ${currentTheme.circle} ${breathingText === "Breathe In" ? 'scale-110' : 'scale-75'}`}></div>
                             <div className={`absolute w-56 h-56 rounded-full shadow-2xl flex items-center justify-center backdrop-blur-lg border ${darkMode ? 'bg-white/5 border-white/10 text-white' : 'bg-white/80 border-white/50 text-slate-800'}`}>
                                 <div className="text-center">
                                     <div className={`text-3xl font-bold transition-all duration-1000 ${breathingText === "Breathe In" ? 'tracking-widest' : 'tracking-normal'}`}>{breathingText}</div>
-                                    <div className="text-xs opacity-50 mt-2 uppercase tracking-wider">Guide</div>
                                 </div>
                             </div>
                         </div>
                         <h1 className={`text-3xl font-bold mt-16 transition-colors duration-500 text-center px-8 drop-shadow-md ${currentTheme.accent}`}>"{currentTheme.quote[quoteIndex]}"</h1>
                     </div>
-
-                    {/* Col 3: Controls & History */}
+                    {/* Controls & History */}
                     <div className="w-1/4 flex flex-col justify-end items-end gap-4 relative">
-                        
-                        {/* 1. Control Panel */}
                         <div className={`w-full flex flex-col gap-3 border p-4 rounded-3xl backdrop-blur-md ${panelClass}`}>
-                            {/* Sound */}
+                            {/* Sound Switch */}
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
                                     <div className={`p-2 rounded-full ${isPlayingMusic ? (darkMode ? 'bg-green-500/20 text-green-400' : 'bg-green-100 text-green-600') : (darkMode ? 'bg-white/10 text-white/50' : 'bg-black/5 text-slate-400')}`}>
                                         {isPlayingMusic ? <Volume2 className="w-4 h-4"/> : <Music className="w-4 h-4"/>}
                                     </div>
-                                    <span className={`text-sm font-bold ${textClass}`}>Sound</span>
+                                    <span className={`text-sm font-bold ${textClass}`}>White Noise</span>
                                 </div>
-                                <button onClick={toggleMusic} className={`w-10 h-6 rounded-full flex items-center p-1 transition-colors ${isPlayingMusic ? 'bg-green-500 justify-end' : 'bg-slate-400/50 justify-start'}`}>
-                                    <div className="w-4 h-4 bg-white rounded-full shadow-sm"></div>
+                                <button onClick={toggleMusic} className="transition-colors">
+                                    {isPlayingMusic ? <ToggleRight className="w-8 h-8 text-green-500" /> : <ToggleLeft className={`w-8 h-8 ${darkMode ? 'text-slate-500' : 'text-slate-300'}`} />}
                                 </button>
                             </div>
                             
                             <div className={`w-full h-px ${darkMode ? 'bg-white/10' : 'bg-black/5'}`}></div>
-
                             {/* Video Switch */}
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
                                     <div className={`p-2 rounded-full ${showBackgroundVideo ? (darkMode ? 'bg-blue-500/20 text-blue-400' : 'bg-blue-100 text-blue-600') : (darkMode ? 'bg-white/10 text-white/50' : 'bg-black/5 text-slate-400')}`}>
-                                        <Eye className="w-4 h-4"/>
+                                        <Eye className="w-4 h-4"/> 
                                     </div>
-                                    <span className={`text-sm font-bold ${textClass}`}>Video BG</span>
+                                    <span className={`text-sm font-bold ${textClass}`}>BG Video</span>
                                 </div>
                                 <button onClick={() => setShowBackgroundVideo(!showBackgroundVideo)} className="transition-colors">
                                     {showBackgroundVideo ? <ToggleRight className="w-8 h-8 text-green-500" /> : <ToggleLeft className={`w-8 h-8 ${darkMode ? 'text-slate-500' : 'text-slate-300'}`} />}
                                 </button>
                             </div>
                         </div>
-
-                        {/* 2. History Toggle Button (恢复的按钮) */}
+                        {/* History */}
                         <button 
                             onClick={() => setShowHistory(true)}
                             className={`w-full flex items-center justify-center gap-2 p-3 rounded-2xl border backdrop-blur-md transition-all active:scale-95 ${glassClass}`}
@@ -1056,8 +952,7 @@ const RestModeView = ({ onClose, darkMode }) => {
                             <History className="w-4 h-4 opacity-70" />
                             <span className="text-sm font-bold">View Session Log</span>
                         </button>
-
-                        {/* 3. Mood Switcher */}
+                        {/* Mood Switcher */}
                         <div className={`w-full p-4 rounded-[2rem] backdrop-blur-xl border ${darkMode ? 'bg-black/30 border-white/10' : 'bg-white/50 border-white/40'}`}>
                             <div className="flex justify-between gap-2">
                                  <button onClick={() => handleMoodChange('happy')} className={`flex-1 aspect-square rounded-2xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 ${mood === 'happy' ? 'bg-green-500 text-white shadow-[0_0_15px_rgba(34,197,94,0.5)]' : (darkMode ? 'bg-white/5 text-white/50 hover:bg-white/20' : 'bg-white/60 text-slate-400 hover:bg-white')}`}><Smile className="w-8 h-8" /></button>
@@ -1069,7 +964,7 @@ const RestModeView = ({ onClose, darkMode }) => {
                 </div>
             </div>
 
-            {/* --- History Modal (Overlay) --- */}
+            {/* History Modal */}
             {showHistory && (
                 <div className="absolute inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-center justify-end p-8 animate-in fade-in duration-200">
                     <div className={`w-1/3 h-full rounded-3xl shadow-2xl flex flex-col animate-in slide-in-from-right duration-300 border ${darkMode ? 'bg-slate-900 border-white/10 text-white' : 'bg-white border-white/40 text-slate-900'}`} onClick={(e) => e.stopPropagation()}>
@@ -1100,7 +995,7 @@ const RestModeView = ({ onClose, darkMode }) => {
                 </div>
             )}
 
-            {/* --- Video Modal (YouTube) --- */}
+            {/* Video Modal (YouTube)*/}
             {playingVideo && (
                 <div className="absolute inset-0 z-[60] bg-black/90 backdrop-blur-sm flex items-center justify-center p-8 animate-in fade-in duration-300">
                     <div className="bg-slate-900 w-full max-w-4xl rounded-3xl overflow-hidden relative shadow-2xl flex flex-col border border-white/10">
@@ -1125,23 +1020,20 @@ const RestModeView = ({ onClose, darkMode }) => {
     );
 };
 
-
-// --- 6. 驾驶主页 (Home Page) ---
-const DriverHomePage = ({ navigateToSchedule, showRestStops, setShowRestStops, onStopClick, activeRoute, darkMode, toggleDarkMode, onToggleMessages, onToggleRestMode, openRouteDetail, nextStopOverride, unreadCount}) => {
+// --- [Driver Home Page] ---
+const DriverHomePage = ({ showRestStops, setShowRestStops, onStopClick, activeRoute, darkMode, toggleDarkMode, onToggleMessages, onToggleRestMode, openRouteDetail, nextStopOverride, unreadCount}) => {
   const [time, setTime] = useState(new Date());
   const [capacity, setCapacity] = useState(45);
   const [isStopRequested, setIsStopRequested] = useState(false);
   const [isVoiceActive, setIsVoiceActive] = useState(false);
   const [isSimulating, setIsSimulating] = useState(false);
   const [currentStopIndex, setCurrentStopIndex] = useState(0);
+  const [contentHeight, setContentHeight] = useState(0);
   const timelineRef = useRef(null);
-  
-  // 使用真实路由或默认路由
+  const timelineContentRef = useRef(null);
   let rawStops = activeRoute ? activeRoute.timeline : generateTimeline(route4Stops, 18, 0);
-
-  // 坐标定义 (0-100%)
   const routePathCoordinates = [
-      { x: 30, y: 80 }, // Start
+      { x: 30, y: 80 }, 
       { x: 32, y: 76 },
       { x: 34, y: 72 },
       { x: 36, y: 68 },
@@ -1174,7 +1066,7 @@ const DriverHomePage = ({ navigateToSchedule, showRestStops, setShowRestStops, o
   const nextStop = displayedStops.slice(currentStopIndex + 1).find(s => s.type !== 'deadhead') || displayedStops[currentStopIndex + 1];
   const activeNextStop = nextStopOverride || nextStop;
 
-  // 模拟逻辑
+  // Simulation
   useEffect(() => {
       let interval;
       if (isSimulating) {
@@ -1183,12 +1075,25 @@ const DriverHomePage = ({ navigateToSchedule, showRestStops, setShowRestStops, o
                   if (prev >= rawStops.length - 1) { setIsSimulating(false); return 0; }
                   return prev + 1;
               });
-          }, 3000); // 3秒一站
+          }, 4000); 
       }
       return () => clearInterval(interval);
   }, [isSimulating, rawStops.length]);
 
-  // 时间轴滚动
+  // Track timeline content height
+  useEffect(() => {
+      if (timelineContentRef.current) {
+          const observer = new ResizeObserver(() => {
+              if (timelineContentRef.current) {
+                  setContentHeight(timelineContentRef.current.scrollHeight);
+              }
+          });
+          observer.observe(timelineContentRef.current);
+          return () => observer.disconnect();
+      }
+  }, [displayedStops]);
+
+  // Timeline Auto-Scroll
   useEffect(() => {
       if (timelineRef.current) {
           const currentElement = timelineRef.current.querySelector('[data-current="true"]');
@@ -1206,31 +1111,10 @@ const DriverHomePage = ({ navigateToSchedule, showRestStops, setShowRestStops, o
   useEffect(() => { const timer = setInterval(() => setTime(new Date()), 1000); return () => clearInterval(timer); }, []);
   const formatTime = (d) => d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-  // 状态管理
-  const [sosState, setSosState] = useState('idle');
-  const [isEmergencyActive, setIsEmergencyActive] = useState(false);
-  const handleSOS = () => {
-      if (sosState === 'idle') { setSosState('confirm'); setTimeout(() => setSosState(prev => prev === 'active' ? 'active' : 'idle'), 3000); } 
-      else if (sosState === 'confirm') { setSosState('active'); setIsEmergencyActive(true); setTimeout(() => { setIsEmergencyActive(false); setSosState('idle'); }, 3000); }
-  };
-
-  const [callStatus, setCallStatus] = useState('idle');
-  const handleCallDispatch = () => {
-      if (callStatus !== 'idle') return;
-      setCallStatus('calling');
-      setTimeout(() => { setCallStatus('connected'); setTimeout(() => { setCallStatus('idle'); }, 1500); }, 2000);
-  };
-
-  // --- 修改 1: 优化视角算法 ---
-  // 降低缩放倍率，保证视野上下文
   const getMapTransformStyle = () => {
       const targetIndex = currentStopIndex; 
       const targetPos = getStopPosition(targetIndex);
-      
-      // 修改：将缩放从 2.5 降低到 1.6
-      const scale = 1.6; 
-      
-      // 屏幕中心(50) - 目标点位置 * 缩放
+      const scale = 1.4; 
       const translateX = 50 - (targetPos.left * scale);
       const translateY = 50 - (targetPos.top * scale);
 
@@ -1247,7 +1131,7 @@ const DriverHomePage = ({ navigateToSchedule, showRestStops, setShowRestStops, o
       };
   };
 
-  // 延误模拟
+  // Delay Simulation
   const [delayMinutes, setDelayMinutes] = useState(0);
   useEffect(() => {
       const interval = setInterval(() => { setDelayMinutes(Math.floor(Math.random() * 13) - 4); }, 5000);
@@ -1256,55 +1140,69 @@ const DriverHomePage = ({ navigateToSchedule, showRestStops, setShowRestStops, o
   const getDelayColor = (min) => { if (min < -2) return 'text-orange-500'; if (min <= 2) return 'text-green-500'; if (min < 5) return 'text-yellow-500'; return 'text-red-500'; };
   const getDelayText = (min) => { if (min < -2) return "Early"; if (min <= 2) return "On Time"; if (min < 5) return "Delay"; return "Late"; };
 
-  // 其他模拟状态
+  // Capacity & Stop Request Simulation
   useEffect(() => { const interval = setInterval(() => { if (Math.random() > 0.7) setIsStopRequested(prev => !prev); }, 6000); return () => clearInterval(interval); }, []);
   useEffect(() => { const interval = setInterval(() => { setCapacity(prev => { const change = Math.floor(Math.random() * 16) - 5; let newCap = prev + change; if (newCap > 100) newCap = 100; if (newCap < 0) newCap = 0; return newCap; }); }, 3000); return () => clearInterval(interval); }, []);
   const [doorsLocked, setDoorsLocked] = useState(true);
   const [interiorLights, setInteriorLights] = useState(false);
   useEffect(() => { const interval = setInterval(() => { if (Math.random() > 0.7) setDoorsLocked(prev => !prev); if (Math.random() > 0.8) setInteriorLights(prev => !prev); }, 4000); return () => clearInterval(interval); }, []);
 
+  // Emergency Simulation
+  const [sosState, setSosState] = useState('idle');
+  const handleSOS = () => {
+      if (sosState === 'idle') { setSosState('confirm'); setTimeout(() => setSosState(prev => prev === 'active' ? 'active' : 'idle'), 3000); } 
+      else if (sosState === 'confirm') { setSosState('active'); setIsEmergencyActive(true); setTimeout(() => { setIsEmergencyActive(false); setSosState('idle'); }, 3000); }
+  };
+  // Call Simulation
+  const [callStatus, setCallStatus] = useState('idle');
+  const handleCallDispatch = () => {
+      if (callStatus !== 'idle') return;
+      setCallStatus('calling');
+      setTimeout(() => { setCallStatus('connected'); setTimeout(() => { setCallStatus('idle'); }, 1500); }, 2000);
+  };
+
   return (
     <div className={`flex flex-col h-full w-full font-sans overflow-hidden select-none relative transition-colors duration-500 ${darkMode ? 'bg-slate-900 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
-      <header className={`h-20 flex items-center justify-between px-6 shadow-sm z-10 shrink-0 transition-colors duration-500 ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-b border-slate-200'}`}>
-        <div className="flex items-center space-x-6">
-            <button onClick={() => openRouteDetail(null)} className="bg-blue-600 px-3 py-1 rounded text-lg font-bold text-white transition-all active:scale-95">{currentRouteName}</button>
-            <div className={`text-sm font-mono transition-all ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>{currentBusNo}</div>
-        </div>
-        
-        <div className="flex items-center space-x-6">
-            <button onClick={() => setIsVoiceActive(true)} className={`p-4 rounded-full transition-all active:scale-95 hover:shadow-lg ${darkMode ? 'bg-slate-700 text-blue-400 hover:bg-slate-600' : 'bg-blue-100 text-blue-600 hover:bg-blue-200'}`}>
-                <Mic className="w-7 h-7"/>
-            </button>
-            <div className={`text-5xl font-mono font-bold tracking-wider ${darkMode ? 'text-white' : 'text-slate-800'}`}>{formatTime(time)}</div>
-            <div className={`flex items-center space-x-3 px-5 py-2 rounded-2xl transition-colors duration-500 ${darkMode ? 'bg-slate-900' : 'bg-white'}`}>
-                <div className="flex items-center space-x-1">
-                    <div className={`w-2 h-5 rounded-sm transition-colors duration-500 ${delayMinutes < -2 ? 'bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.6)]' : 'bg-slate-300 opacity-20'}`}></div>
-                    <div className={`w-2 h-5 rounded-sm transition-colors duration-500 ${delayMinutes >= -2 && delayMinutes <= 2 ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-slate-300 opacity-20'}`}></div>
-                    <div className="w-0.5 h-6 bg-slate-400/30 mx-1"></div>
-                    <div className={`w-2 h-5 rounded-sm transition-colors duration-500 ${delayMinutes > 2 ? (delayMinutes >= 5 ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]' : 'bg-yellow-500') : 'bg-slate-300 opacity-20'}`}></div>
-                </div>
-                <div className="flex flex-col leading-none text-right min-w-[60px]">
-                    <span className={`text-xl font-bold font-mono transition-colors duration-500 ${getDelayColor(delayMinutes)}`}>{delayMinutes > 0 ? `+${delayMinutes}` : delayMinutes}:00</span>
-                    <span className={`text-[10px] font-bold uppercase tracking-wide transition-colors duration-500 ${getDelayColor(delayMinutes)}`}>{getDelayText(delayMinutes)}</span>
+        <header className={`h-20 flex items-center justify-between px-6 shadow-sm z-10 shrink-0 transition-colors duration-500 ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-b border-slate-200'}`}>
+            <div className="flex items-center space-x-6">
+                <button onClick={() => openRouteDetail(null)} className="bg-blue-600 px-3 py-1 rounded text-lg font-bold text-white transition-all active:scale-95">{currentRouteName}</button>
+                <div className={`text-sm font-mono transition-all ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>{currentBusNo}</div>
+            </div>
+            <div className="flex items-center space-x-6">
+                <button onClick={() => setIsVoiceActive(true)} className={`p-4 rounded-full transition-all active:scale-95 hover:shadow-lg ${darkMode ? 'bg-slate-700 text-blue-400 hover:bg-slate-600' : 'bg-blue-100 text-blue-600 hover:bg-blue-200'}`}>
+                    <Mic className="w-7 h-7"/>
+                </button>
+                <div className={`text-5xl font-mono font-bold tracking-wider ${darkMode ? 'text-white' : 'text-slate-800'}`}>{formatTime(time)}</div>
+                <div className={`flex items-center space-x-3 px-5 py-2 rounded-2xl transition-colors duration-500 ${darkMode ? 'bg-slate-900' : 'bg-white'}`}>
+                    <div className="flex items-center space-x-1">
+                        <div className={`w-2 h-5 rounded-sm transition-colors duration-500 ${delayMinutes < -2 ? 'bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.6)]' : 'bg-slate-300 opacity-20'}`}></div>
+                        <div className={`w-2 h-5 rounded-sm transition-colors duration-500 ${delayMinutes >= -2 && delayMinutes <= 2 ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-slate-300 opacity-20'}`}></div>
+                        <div className="w-0.5 h-6 bg-slate-400/30 mx-1"></div>
+                        <div className={`w-2 h-5 rounded-sm transition-colors duration-500 ${delayMinutes > 2 ? (delayMinutes >= 5 ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]' : 'bg-yellow-500') : 'bg-slate-300 opacity-20'}`}></div>
+                    </div>
+                    <div className="flex flex-col leading-none text-right min-w-[60px]">
+                        <span className={`text-xl font-bold font-mono transition-colors duration-500 ${getDelayColor(delayMinutes)}`}>{delayMinutes > 0 ? `+${delayMinutes}` : delayMinutes}:00</span>
+                        <span className={`text-[10px] font-bold uppercase tracking-wide transition-colors duration-500 ${getDelayColor(delayMinutes)}`}>{getDelayText(delayMinutes)}</span>
+                    </div>
                 </div>
             </div>
-        </div>
-
-        <div className="flex items-center space-x-4">
-           <button onClick={toggleDarkMode} className={`p-2 rounded-full transition-colors ${darkMode ? 'bg-slate-700 text-yellow-400 hover:bg-slate-600' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>{darkMode ? <Sun className="w-7 h-7"/> : <Moon className="w-7 h-7"/>}</button>
-           <div className="text-right"><div className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Drive Time</div><div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-slate-800'}`}>3h 15m</div></div>
-           <div className="w-24 h-2 bg-slate-200 rounded-full overflow-hidden"><div className="h-full bg-orange-500 w-3/4"></div></div>
-        </div>
-      </header>
+            <div className="flex items-center space-x-4">
+                <button onClick={toggleDarkMode} className={`p-2 rounded-full transition-colors ${darkMode ? 'bg-slate-700 text-yellow-400 hover:bg-slate-600' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>{darkMode ? <Sun className="w-7 h-7"/> : <Moon className="w-7 h-7"/>}</button>
+                <div className="text-right"><div className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Drive Time</div><div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-slate-800'}`}>3h 15m</div></div>
+                <div className="w-24 h-2 bg-slate-200 rounded-full overflow-hidden"><div className="h-full bg-orange-500 w-3/4"></div></div>
+            </div>
+        </header>
 
       <div className="flex flex-1 overflow-hidden relative">
+        {/* Timeline*/}
         <aside className={`w-1/4 border-r flex flex-col z-20 shadow-lg transition-colors duration-500 ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
           <div className={`p-4 border-b flex items-center justify-between ${darkMode ? 'border-slate-700 bg-slate-800' : 'border-slate-100 bg-slate-50'}`}>
               <h3 className={`text-sm font-bold uppercase tracking-widest ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Timeline</h3>
               <button onClick={() => setIsSimulating(!isSimulating)} className={`flex items-center space-x-1 px-2 py-1 rounded-lg text-xs font-bold border transition-all ${isSimulating ? 'bg-green-100 text-green-700 border-green-200' : 'bg-slate-100 text-slate-500 border-slate-200'}`}>{isSimulating ? <Pause className="w-3 h-3"/> : <Play className="w-3 h-3"/>}<span>{isSimulating ? 'Pause' : 'Simulate'}</span></button>
           </div>
           <div ref={timelineRef} className="flex-1 overflow-y-auto scrollbar-hide p-4 relative">
-            <div className={`absolute left-[23px] top-4 bottom-4 w-1 z-0 ${darkMode ? 'bg-slate-600' : 'bg-slate-200'}`}></div>
+            <div className={`absolute left-[33px] w-1 z-0 ${darkMode ? 'bg-slate-600' : 'bg-slate-200'}`} style={{height: `${contentHeight}px`, top: 0}}></div>
+            <div ref={timelineContentRef}>
             {displayedStops.map((stop, index) => {
               if (stop.type === 'rest_stop' && !showRestStops) return null;
               const isRestStop = stop.type === 'rest_stop';
@@ -1312,7 +1210,6 @@ const DriverHomePage = ({ navigateToSchedule, showRestStops, setShowRestStops, o
               let dotClass = isRestStop 
                 ? `w-10 h-10 rounded-xl flex items-center justify-center shrink-0 z-10 transition-colors ${isCurrent ? 'bg-orange-500 text-white shadow-lg scale-110' : (darkMode ? 'bg-slate-700 text-orange-400 border border-orange-900' : 'bg-orange-50 text-orange-500 border border-orange-200')}`
                 : `w-10 h-10 rounded-full border-4 flex items-center justify-center shrink-0 z-10 transition-colors ${isCurrent ? (darkMode ? 'bg-blue-600 border-white text-white shadow-[0_0_15px_rgba(59,130,246,0.6)]' : 'bg-blue-600 border-blue-200 text-white shadow-lg') : (darkMode ? 'bg-slate-800 border-slate-600 text-slate-500' : 'bg-slate-100 border-slate-300 text-slate-500')}`;
-              
               return (
                 <div key={stop.id} data-current={isCurrent} className={`flex items-start mb-6 relative group cursor-pointer transition-all duration-500 ${isCurrent ? (darkMode ? 'bg-slate-700/50 -mx-2 p-2 rounded-lg' : 'bg-slate-50 -mx-2 p-2 rounded-lg') : ''}`} onClick={() => isRestStop && onStopClick(stop)}>
                   <div className={dotClass}>{isRestStop ? <Coffee className="w-5 h-5" /> : <span className="text-xs font-bold">{index + 1}</span>}</div>
@@ -1323,21 +1220,17 @@ const DriverHomePage = ({ navigateToSchedule, showRestStops, setShowRestStops, o
                 </div>
               );
             })}
+            </div>
           </div>
           <div className={`p-4 border-t ${darkMode ? 'border-slate-700 bg-slate-800' : 'border-slate-100 bg-white'}`}>
               <button onClick={() => setShowRestStops(!showRestStops)} className={`w-full flex items-center justify-center space-x-2 px-3 py-3 rounded-xl font-bold transition-all border-2 active:scale-95 ${showRestStops ? 'bg-orange-100 text-orange-700 border-orange-200' : (darkMode ? 'bg-slate-700 text-slate-300 border-slate-600' : 'bg-white text-slate-500 border-slate-300')}`}>{showRestStops ? <Eye className="w-5 h-5"/> : <EyeOff className="w-5 h-5"/>}<span>{showRestStops ? 'Hide Rest Stops' : 'Show Rest Stops'}</span></button>
           </div>
         </aside>
-
+        {/* Map */}
         <main className={`flex-1 relative flex flex-col items-center justify-center overflow-hidden transition-colors duration-500 ${darkMode ? 'bg-slate-900' : 'bg-slate-100'}`}>
-          
-          {/* --- 缩放容器 --- */}
           <div style={getMapTransformStyle()}>
-              {/* 背景网格 & SVG 路径 */}
               <div className="absolute inset-0 opacity-40 pointer-events-none">
-                  {/* Grid */}
                   <div className="w-full h-full" style={{backgroundImage: `linear-gradient(${darkMode ? '#475569' : '#94a3b8'} 1px, transparent 1px), linear-gradient(90deg, ${darkMode ? '#475569' : '#94a3b8'} 1px, transparent 1px)`, backgroundSize: '40px 40px'}}></div>
-                  
                   {/* Map Path */}
                   <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
                       <path d="M 30 80 Q 35 70 40 60" fill="none" stroke="#22c55e" strokeWidth="1.5" strokeLinecap="round" strokeDasharray="1,1" />
@@ -1346,15 +1239,12 @@ const DriverHomePage = ({ navigateToSchedule, showRestStops, setShowRestStops, o
                       <circle cx="90" cy="5" r="3" fill="none" stroke={darkMode ? "#1e293b" : "#3b82f6"} strokeWidth="0.5" opacity="0.5"/>
                   </svg>
               </div>
-
-             {/* 站点渲染 */}
+             {/* Bus Stops */}
              {displayedStops.map((stop, index) => {
                  const pos = getStopPosition(index);
                  const posStyle = { top: `${pos.top}%`, left: `${pos.left}%` };
-                 
                  const isActive = index === currentStopIndex;
                  const isPassed = index < currentStopIndex;
-
                  if (stop.type === 'rest_stop') {
                      if (!showRestStops) return null;
                      return (
@@ -1367,24 +1257,20 @@ const DriverHomePage = ({ navigateToSchedule, showRestStops, setShowRestStops, o
                      );
                  } else { 
                      return (
-                         <div key={stop.id} className={`absolute z-30 flex flex-col items-center transition-all duration-500 -translate-x-1/2 -translate-y-1/2`} style={posStyle}>
-                             
-                             {/* --- 修改 2: 调整气泡文字大小和 Padding --- */}
-                             {isActive && (
-                                 <div className={`mb-2 px-3 py-1.5 rounded-lg text-sm font-bold shadow-xl whitespace-nowrap animate-in zoom-in slide-in-from-bottom-2 duration-300 flex flex-col items-center 
+                         <div key={stop.id} className={`absolute z-[100] flex flex-col items-center transition-all duration-500 -translate-x-1/2 -translate-y-1/2`} style={posStyle}>
+                             {/* {isActive && (
+                                 <div className={`mb-2 px-3 py-1.5 rounded-lg text-sm font-bold shadow-xl whitespace-nowrap animate-in zoom-in slide-in-from-bottom-2 duration-300 flex flex-col items-center relative z-[200]
                                      ${darkMode ? 'bg-slate-800 text-white border border-slate-600' : 'bg-white text-slate-900 border border-blue-100'}`}>
                                      {stop.name}
                                      <div className={`absolute -bottom-1 w-2.5 h-2.5 rotate-45 ${darkMode ? 'bg-slate-800 border-b border-r border-slate-600' : 'bg-white border-b border-r border-blue-100'}`}></div>
                                  </div>
-                             )}
-
-                             {/* 圆点图标样式 */}
-                             <div className={`flex items-center justify-center rounded-full shadow-lg border-2 transition-all duration-500 relative
+                             )} */}
+                             <div className={`flex items-center justify-center rounded-full shadow-lg border-2 transition-all duration-500 relative z-10
                                  ${isActive 
-                                   ? 'w-10 h-10 bg-blue-600 border-white text-white ring-4 ring-blue-400/50 z-50 scale-110' 
+                                   ? 'w-8 h-8 bg-blue-600 border-white text-white ring-4 ring-blue-400/50 z-20 scale-110' 
                                    : (isPassed 
-                                       ? 'w-4 h-4 bg-slate-300 border-slate-200 opacity-50' 
-                                       : 'w-4 h-4 bg-white border-blue-300' 
+                                       ? 'w-4 h-4 bg-slate-300 border-slate-200 opacity-50 pointer-events-none relative z-10' 
+                                       : 'w-4 h-4 bg-white border-blue-300 relativez-10' 
                                      )
                                  }
                              `}>
@@ -1395,8 +1281,7 @@ const DriverHomePage = ({ navigateToSchedule, showRestStops, setShowRestStops, o
                  }
              })}
           </div>
-
-          {/* 顶部指示条 */}
+          {/* Navigation Bar */}
           <div className="absolute top-6 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur border border-slate-300 px-6 py-3 rounded-2xl shadow-xl flex items-center space-x-4 pointer-events-none z-20">
               <Navigation className="w-8 h-8 text-blue-600" />
               <div>
@@ -1409,7 +1294,7 @@ const DriverHomePage = ({ navigateToSchedule, showRestStops, setShowRestStops, o
               </div>
           </div>
         </main>
-
+        {/* Sidebar */}
         <aside className={`w-1/4 border-r flex flex-col z-20 shadow-xl transition-colors duration-500 p-5 gap-5 ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
            <div className={`flex-[1.2] rounded-3xl p-4 flex flex-col gap-4 border ${darkMode ? 'bg-slate-900/50 border-slate-700' : 'bg-slate-100/80 border-slate-200'}`}>
                <div className={`text-[10px] font-bold uppercase tracking-widest px-1 ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>Vehicle Status</div>
@@ -1421,7 +1306,7 @@ const DriverHomePage = ({ navigateToSchedule, showRestStops, setShowRestStops, o
                    </div>
                    <span className={`text-lg font-bold relative z-10 ${capacity > 80 ? 'text-red-500' : (darkMode ? 'text-white' : 'text-slate-800')}`}>{capacity}%</span>
                </div>
-               <div className="flex-1 grid grid-cols-3 items-center justify-items-center divide-x divide-slate-200/50 dark:divide-slate-700/50">
+               <div className="flex-1 grid grid-cols-3 items-center justify-items-center gap-4">
                    <div className={`flex flex-col items-center justify-center transition-all duration-300 ${isStopRequested ? 'scale-110' : 'opacity-50'}`}>
                        <span className={`text-[10px] font-bold uppercase mb-1 tracking-wider ${isStopRequested ? 'text-red-500' : 'text-slate-400'}`}>Request</span>
                        <span className={`text-sm font-black uppercase transition-colors duration-300 ${isStopRequested ? 'text-red-600 animate-pulse' : (darkMode ? 'text-slate-600' : 'text-slate-300')}`}>{isStopRequested ? 'STOP' : 'NO STOP'}</span>
@@ -1442,7 +1327,7 @@ const DriverHomePage = ({ navigateToSchedule, showRestStops, setShowRestStops, o
                    <button onClick={onToggleMessages} className={`flex-1 rounded-2xl border-2 flex flex-col items-center justify-center relative transition-all active:scale-[0.98] shadow-sm hover:shadow-md group ${darkMode ? 'bg-slate-700 border-slate-600 hover:bg-slate-600' : 'bg-white border-slate-200 hover:bg-blue-50/50'}`}>
                         <div className="relative mb-2">
                             <MessageSquare className="w-10 h-10 text-blue-500 group-hover:scale-110 transition-transform" />
-                            {unreadCount > 0 && (<div className="absolute -top-1 -right-1.5 w-3 h-3"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span><span className="relative inline-flex rounded-full h-3 w-3 bg-red-500 border-2 border-white"></span></div>)}
+                            {unreadCount > 0 && (<div className="absolute -top-2 -right-2 w-5 h-5"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span><span className="absolute inline-flex rounded-full h-5 w-5 bg-red-500 border-2 border-white"></span></div>)}
                         </div>
                         <span className={`text-base font-bold ${darkMode ? 'text-slate-200' : 'text-slate-700'}`}>Messages</span>
                    </button>
@@ -1452,13 +1337,11 @@ const DriverHomePage = ({ navigateToSchedule, showRestStops, setShowRestStops, o
                        <span className={`text-base font-bold ${darkMode ? 'text-indigo-300' : 'text-indigo-700'}`}>Rest Mode</span>
                    </button>
                </div>
-
                <div className="flex-1 flex gap-4">
                    <button onClick={handleCallDispatch} disabled={callStatus !== 'idle'} className={`flex-1 rounded-2xl border-2 flex flex-col items-center justify-center transition-all active:scale-[0.95] shadow-sm ${callStatus === 'idle' ? (darkMode ? 'bg-slate-700 border-slate-600 hover:bg-slate-600' : 'bg-white border-slate-200 hover:bg-slate-50') : callStatus === 'calling' ? 'bg-blue-100 border-blue-300' : 'bg-green-100 border-green-300'}`}>
                        <PhoneCall className={`w-9 h-9 mb-2 transition-all ${callStatus === 'calling' ? 'text-blue-600 animate-bounce' : (callStatus === 'connected' ? 'text-green-600' : 'text-blue-500')}`} />
                        <span className={`text-sm font-bold ${callStatus === 'calling' ? 'text-blue-700' : (callStatus === 'connected' ? 'text-green-700' : (darkMode ? 'text-slate-300' : 'text-slate-600'))}`}>{callStatus === 'idle' ? 'Dispatch' : (callStatus === 'calling' ? 'Calling...' : 'Connected')}</span>
                    </button>
-                   
                    <button onClick={handleSOS} className={`flex-1 rounded-2xl border-2 flex flex-col items-center justify-center transition-all active:scale-[0.95] shadow-sm ${sosState === 'confirm' ? 'bg-red-600 border-red-700 animate-pulse' : sosState === 'active' ? 'bg-red-800 border-red-900' : 'bg-red-50 border-red-100 hover:bg-red-100'}`}>
                        <ShieldAlert className={`w-9 h-9 mb-2 transition-colors ${sosState === 'idle' ? 'text-red-600' : 'text-white'}`} />
                        <span className={`text-sm font-bold ${sosState === 'idle' ? 'text-red-600' : 'text-white'}`}>{sosState === 'idle' ? 'SOS' : (sosState === 'confirm' ? 'CONFIRM?' : 'SENT')}</span>
@@ -1472,15 +1355,13 @@ const DriverHomePage = ({ navigateToSchedule, showRestStops, setShowRestStops, o
   );
 };
 
-// --- 7. 排班表页面 ---
+// --- [Schedule Page] ---
 const SchedulePage = ({ darkMode, openRouteDetail, onLogout }) => {
     const hours = Array.from({ length: 24 }, (_, i) => i);
-    
-    // 计算当前星期每一天的日期
     const getCurrentWeekDates = () => {
         const now = new Date();
-        const day = now.getDay(); // 0 = 周日, 1 = 周一, ..., 6 = 周六
-        const diff = now.getDate() - day + (day === 0 ? -6 : 1); // 调整到周一
+        const day = now.getDay(); 
+        const diff = now.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is Sunday
         const monday = new Date(now.setDate(diff));
         const weekDates = [];
         for (let i = 0; i < 7; i++) {
@@ -1490,11 +1371,8 @@ const SchedulePage = ({ darkMode, openRouteDetail, onLogout }) => {
         }
         return weekDates;
     };
-
     const weekDates = getCurrentWeekDates();
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    
     const baseScheduleData = [
         { day: 'Mon', shifts: [{ start: 7, end: 15, route: '4', bus: 'B-9527', type: 'work' }] }, 
         { day: 'Tue', shifts: [{ start: 14, end: 22, route: '6', bus: 'B-8821', type: 'work' }] }, 
@@ -1504,7 +1382,6 @@ const SchedulePage = ({ darkMode, openRouteDetail, onLogout }) => {
         { day: 'Sat', shifts: [{ start: 9, end: 17, route: '6', bus: 'T-101', type: 'work' }] }, 
         { day: 'Sun', shifts: [{ start: 0, end: 24, type: 'rest' }] }];
     
-    // 为每个 shift 添加日期属性
     const scheduleData = baseScheduleData.map((dayData, index) => {
         const date = weekDates[index];
         const formattedDate = `${monthNames[date.getMonth()]} ${date.getDate()}`;
@@ -1518,14 +1395,6 @@ const SchedulePage = ({ darkMode, openRouteDetail, onLogout }) => {
             }))
         };
     });
-
-    // 计算当前星期的日期范围（周一到周日）
-    const getCurrentWeekRange = () => {
-        const monday = weekDates[0];
-        const sunday = weekDates[6];
-        const formatDate = (date) => `${monthNames[date.getMonth()]} ${date.getDate()}`;
-        return `${formatDate(monday)} - ${formatDate(sunday)}`;
-    };
 
     return (
         <div className={`flex flex-col h-full w-full font-sans p-8 overflow-hidden relative ${darkMode ? 'bg-slate-900 text-white' : 'bg-slate-50 text-slate-900'}`}>
@@ -1552,7 +1421,7 @@ const SchedulePage = ({ darkMode, openRouteDetail, onLogout }) => {
                          <div className="font-mono font-bold text-blue-500">38.5h</div>
                     </div>
                     <button 
-                        onClick={onLogout} // 点击触发上面传下来的函数
+                        onClick={onLogout}
                         className={`px-5 rounded-2xl border shadow-sm flex flex-col items-center justify-center transition-all active:scale-95 group ${darkMode ? 'bg-slate-800 border-slate-700 hover:bg-red-900/20 hover:border-red-800/50' : 'bg-white border-slate-200 hover:bg-red-50 hover:border-red-200'}`}
                         title="Log Out"
                     >
@@ -1601,24 +1470,7 @@ const SchedulePage = ({ darkMode, openRouteDetail, onLogout }) => {
 };
 
 
-
-const TabButton = ({ icon, label, active, onClick, darkMode }) => (
-    <button 
-        onClick={onClick} 
-        className={`flex-1 flex flex-col items-center justify-center h-full transition-all duration-300 ${active ? 'text-blue-500' : (darkMode ? 'text-slate-500 hover:text-slate-300' : 'text-slate-400 hover:text-slate-600')}`}
-    >
-        {/* 容器内边距增加，图标放大 */}
-        <div className={`p-1 rounded-2xl mb-1 transition-all ${active ? (darkMode ? 'bg-blue-500/20' : 'bg-blue-50') : ''}`}>
-            {React.cloneElement(icon, { className: `w-6 h-6 ${active ? 'stroke-[2.5px]' : 'stroke-2'}` })}
-        </div>
-        {/* 文字字号放大 */}
-        <span className="text-sm font-bold uppercase tracking-wider mt-1">
-            {label}
-        </span>
-    </button>
-);
-
-/* --- 9. 根组件 (Main App Container) --- */
+/* --- [Main App Container] --- */
 const BusDriverApp = () => {
   //Page variables
   const [currentPage, setCurrentPage] = useState('home'); // current page
@@ -1646,7 +1498,7 @@ const BusDriverApp = () => {
     if (!startX) return;
     const endX = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
     const diff = startX - endX;
-    if (Math.abs(diff) > 50) {
+    if (Math.abs(diff) > 150) {
         if (diff > 0 && currentPage === 'home') setCurrentPage('schedule');
         else if (diff < 0 && currentPage === 'schedule') setCurrentPage('home');
         else if (diff < 0 && currentPage === 'home') setCurrentPage('vehicle'); 
@@ -1656,15 +1508,13 @@ const BusDriverApp = () => {
   };
 
   const handleStopClick = (stop) => { if (stop.type === 'rest_stop') setSelectedStopDetail(stop); };
-  //TODO:shift 
   const handleStartDuty = (shift) => { setActiveRoute(shift); setCurrentPage('home'); };
-  //TODO:mark read
   const handleMarkRead = (id) => { setMessages(messages.map(m => m.id === id ? {...m, read: true} : m)); };
 
   const handleLogout = () => {
-    setIsLoggedIn(false); // 关键！设为 false 就会跳回登录页
-    setCurrentPage('home'); // 可选：重置页面为首页，这样下次登录进来就是主页
-    setActiveOverlay(null); // 可选：关闭所有弹窗
+    setIsLoggedIn(false); 
+    setCurrentPage('home'); 
+    setActiveOverlay(null); 
     };
 
   if (!isLoggedIn) {
@@ -1689,7 +1539,6 @@ const BusDriverApp = () => {
                 showRestStops={showRestStops} 
                 setShowRestStops={setShowRestStops} 
                 onStopClick={handleStopClick} 
-                navigateToSchedule={() => setCurrentPage('schedule')}
                 onToggleMessages={() => setActiveOverlay('messages')} 
                 onToggleRestMode={() => setActiveOverlay('rest')} 
                 openRouteDetail={(shift) => setDetailModalShift(shift || { route: '4', bus: 'B-9527', day: 'Today', start: '06', end: '15' })} 
